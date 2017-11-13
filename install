@@ -1,0 +1,80 @@
+#!/bin/env bash
+
+: ${prefix:="."}
+: ${delete:=0}
+
+while getopts ":p:d" option
+do
+ case "${option}"
+ in
+ p) prefix=${OPTARG};;
+ d) delete=1
+ esac
+done
+shift $((OPTIND-1))
+
+prefix="$(sed 's/\/$//' <<< $prefix)"
+
+set -e
+
+echo "Checking for Anaconda3 and Snakemake"
+
+conda -V &> /dev/null
+if [ $? -ne 0 ]; then
+  echo "Please install Anaconda or Miniconda"
+  exit 1
+fi
+
+python -c "import sys; sys.exit(0) if sys.version_info >= (3, 0) else sys.exit(1)"
+
+if [ $? -ne 0 ]; then
+  echo "Please install or activate a python3 environment"
+  exit 2
+fi
+
+if [ "$(conda list snakemake | grep snakemake | wc -l)" -eq 0 ]; then
+  echo "Please install Snakemake by running 'conda install -c bioconda snakemake'"
+  exit 3
+fi
+
+echo Making directory
+mkdir -p ${prefix}/scripts
+
+echo Installing local python2 environment
+if [ ! -d .files/scripts/checkEnv ]; then
+  conda create -y -p ${prefix}/scripts/checkEnv python=2.7
+fi
+
+cp -r .files/scripts/checkEnv ${prefix}/scripts/
+
+echo Ensuring Flippyr is installed
+
+python -c "import flippyr" &>/dev/null
+if [ $? -ne 0 ]; then
+  pip install flippyr
+fi
+
+echo Copying files
+cp .files/{Snakefile,cluster.yaml,config.yaml,run} ${prefix}
+cp scripts/checkVCF.py ${prefix}/scripts/
+
+echo Adding Anaconda path to config file
+echo "anaconda: $(conda info --root)/bin" >> ${prefix}/config.yaml
+
+if [ $delete -eq 1 ]; then
+  echo Deleting install files.
+  rm -r .files
+  rm -- "$0"
+  if [[ $prefix != "." && ${PWD##*/} = "imputePrep"]]; then
+    cd ..
+    rm -r flipPrep
+  fi
+fi
+
+echo You can now run the pipeline by navigating to the install folder and
+echo running ./run -j \[number of desired threads\]
+echo use the \"-c\" switch to run on the cluster.
+echo Place PLINK binary filesets in the target directory, or in a folder
+echo specified under \"directory\" in config.yaml
+
+exit 0

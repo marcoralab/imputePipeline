@@ -1,0 +1,19 @@
+directory: .
+chr:
+  from: 1
+  to: 22
+  chrlist: ~
+    # use dashes here for list of others
+ref:
+  prefix: /sc/orga/projects/LOAD/Public_Data/1000GP_Phase3/
+  prefix2: 1000GP_Phase3
+  fasta: /sc/orga/projects/LOAD/Brian/fasta/human_g1k_v37.fasta
+qc:
+  #Hardy-Weinberg Equilibrium Cutoff
+  hwe: 0.000001
+  #MAF Cutoff
+  maf: 0.01
+  #Variant level missingness cutoff
+  geno: 0.05
+  #Subject level missingness cutoff
+  mind: 0.05

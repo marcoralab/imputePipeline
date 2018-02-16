@@ -56,7 +56,7 @@ fi
 
 echo Copying files
 cp .files/{Snakefile,cluster.yaml,config.yaml,run} ${prefix}
-cp scripts/checkVCF.py ${prefix}/scripts/
+cp .files/scripts/checkVCF.py ${prefix}/scripts/
 
 echo Adding Anaconda path to config file
 echo "anaconda: $(conda info --root)/bin" >> ${prefix}/config.yaml
@@ -65,7 +65,7 @@ if [ $delete -eq 1 ]; then
   echo Deleting install files.
   rm -r .files
   rm -- "$0"
-  if [[ $prefix != "." && ${PWD##*/} = "imputePrep"]]; then
+  if [ $prefix != "." ] && [ ${PWD##*/} = "imputePrep" ]; then
     cd ..
     rm -r flipPrep
   fi

@@ -43,9 +43,9 @@ mkdir -p ${prefix}/scripts
 echo Installing local python2 environment
 if [ ! -d .files/scripts/checkEnv ]; then
   conda create -y -p ${prefix}/scripts/checkEnv python=2.7
+else
+  cp -r .files/scripts/checkEnv ${prefix}/scripts/
 fi
-
-cp -r .files/scripts/checkEnv ${prefix}/scripts/
 
 echo Ensuring Flippyr is installed
 

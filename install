@@ -57,6 +57,7 @@ fi
 echo Copying files
 cp .files/{Snakefile,cluster.yaml,config.yaml,run} ${prefix}
 cp .files/scripts/checkVCF.py ${prefix}/scripts/
+mkdir ${prefix}/.snakejob
 
 echo Adding Anaconda path to config file
 echo "anaconda: $(conda info --root)/bin" >> ${prefix}/config.yaml

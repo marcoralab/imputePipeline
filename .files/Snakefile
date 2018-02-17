@@ -10,6 +10,8 @@ else:
     CHRLIST = config["chr"]["chrlist"]
 CHR = list(range(config["chr"]["from"],config["chr"]["to"]+1)) + CHRLIST
 INPATH = config["directory"]
+if INPATH[-1] != '/':
+    INPATH += '/'
 
 # Sample is every base name for the .bed files in the INPATH directory
 import re

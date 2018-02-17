@@ -15,8 +15,6 @@ shift $((OPTIND-1))
 
 prefix="$(sed 's/\/$//' <<< $prefix)"
 
-set -e
-
 echo "Checking for Anaconda3 and Snakemake"
 
 conda -V &> /dev/null

@@ -31,8 +31,8 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ "$(conda list snakemake | grep snakemake | wc -l)" -eq 0 ]; then
-  echo "Please install Snakemake by running 'conda install -c bioconda snakemake'"
-  exit 3
+  echo "Installing Snakemake"
+  conda install snakemake
 fi
 
 echo Making directory

@@ -1,30 +1,26 @@
 '''Snakefile for MIS preparation
-   Version 0.4'''
+   Version 0.6'''
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")
 shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
-if not config["chr"]["chrlist"]:
-    CHRLIST = []
-else:
-    CHRLIST = config["chr"]["chrlist"]
-CHR = list(range(config["chr"]["from"],config["chr"]["to"]+1)) + CHRLIST
-INPATH = config["directory"]
-if INPATH[-1] != '/':
-    INPATH += '/'
-
-# Sample is every base name for the .bed files in the INPATH directory
-import re
-import glob
-SAMPLE =  [re.search(r"(^.*\/)(.*)(?=\.bed)",x)[2] for x in  glob.iglob(INPATH + "*.bed")]
 
 BPLINK = ["bed", "bim", "fam"]
 
-localrules: all, var_qc, subj_qc, split_plink, make_vcf, sort_vcf, flippyr_plink
+from scripts.parse_config import parser
 
-rule all:
-    input:
-        expand("log/{sample}_chr{chr}.check.log", sample=SAMPLE, chr=CHR)
+CHROM, SAMPLE, INPATH, keep_command = parser(config)
+
+localrules: all, var_qc, subj_qc, split_to_vcf
+
+if config['check_vcf']:
+    rule all:
+        input:
+            expand("log/{sample}_chr{chrom}.check.log", sample=SAMPLE, chrom=CHROM)
+else:
+    rule all:
+        input:
+            expand("final/{sample}_chr{chrom}.vcf.gz", sample=SAMPLE, chrom=CHROM)
 
 #Pre-split QC
 
@@ -32,17 +28,18 @@ rule var_qc:
     input:
         expand(INPATH + "{{sample}}.{ext}", ext=BPLINK)
     output:
-        plink = expand("data/plink/{{sample}}.{ext}", ext=BPLINK)
+        plink = expand("data/plink/{{sample}}_varqc.{ext}", ext=BPLINK)
     params:
         ins = INPATH + "{sample}",
-        out = "data/plink/{sample}",
+        out = "data/plink/{sample}_varqc",
         geno = config["qc"]["geno"],
         hwe = config["qc"]["hwe"],
         maf = config["qc"]["maf"]
     threads: 8
     shell: "module load plink/1.90; "
         "plink -bfile {params.ins} --geno {params.geno} --memory 128 "
-        "--hwe {params.hwe} --maf {params.maf} --make-bed --out {params.out}"
+        "--keep-allele-order --hwe {params.hwe} --maf {params.maf} "
+        "--make-bed --out {params.out}"
 
 rule subj_qc:
     input:
@@ -50,79 +47,69 @@ rule subj_qc:
     params:
         ins = rules.var_qc.params.out,
         out = "data/plink/{sample}_indivqc",
-        mind = config["qc"]["mind"]
+        mind = config["qc"]["mind"],
+        keep = keep_command
     output:
-        plink = expand("data/plink/{{sample}}_indivqc.{ext}", ext=BPLINK),
-        irem = "data/plink/{sample}.irem"
+        expand("data/plink/{{sample}}_indivqc.{ext}", ext=BPLINK)
     threads: 8
     shell: "module load plink/1.90; "
-        "plink -bfile {params.ins} --memory 128 "
-        "--make-bed --mind {params.mind} --out {params.out}; "
-        "if [ ! -f {output.irem} ]; then echo '' > {output.irem}; fi"
+        "plink -bfile {params.ins} --memory 128 --keep-allele-order "
+        "--mind {params.mind} --remove samp.irem {params.keep}"
+        "--make-bed --out {params.out}"
 
 rule flippyr:
     input:
-        fasta = config["ref"]["fasta"],
-        plink = rules.subj_qc.output.plink
+        fasta = config["ref"],
+        plink = rules.subj_qc.output
     params:
         out = "data/plink/{sample}",
         suff = "_refmatched"
     output:
         expand("data/plink/{{sample}}.{ext}", ext=["allele","flip","delete","log","log.tab"]),
-        command = "data/plink/{sample}.runPlink"
+        command = "data/plink/{sample}.runPlink",
+        plink = expand("data/plink/{{sample}}_refmatched.{ext}", ext=BPLINK)
+    threads: 8
     run:
         import flippyr
         flippyr.writeFiles(input["fasta"],input["plink"][1],params["out"],
-                           silent=False,plink=True,p_suff=params["suff"])
+                           silent=False,plink=False,p_suff=params["suff"])
+        shell("module load plink/1.90; bash {}".format(output["command"]))
 
-rule flippyr_plink:
-    input: rules.flippyr.output.command
-    output: expand("data/plink/{{sample}}_refmatched.{ext}", ext=BPLINK)
-    threads: 8
-    shell: "module load plink/1.90; bash {input}"
+# Split, sort and compress
 
-rule split_plink: #Split plink files into chromosomes.
+rule split_to_vcf: #Split plink files into chromosomes.
     input:
-        rules.flippyr_plink.output
+        rules.flippyr.output.plink
     params:
         ins = "data/plink/{sample}_refmatched",
-        out = "data/plink/{sample}_chr{chr}",
-        c="{chr}"
+        out = "data/{sample}_chr{chrom}_unsorted",
+        c = "{chrom}"
     output:
-        expand("data/plink/{{sample}}_chr{{chr}}.{ext}", ext=BPLINK)
+        "data/{sample}_chr{chrom}_unsorted.vcf"
     shell: "module load plink/1.90; "
         "plink -bfile {params.ins} --chr {params.c} "
-        "--make-bed --out {params.out} --memory 64 --keep-allele-order"
-
-rule make_vcf:
-    input:
-        rules.split_plink.output
-    output:
-        "data/vcf/{sample}_chr{chr}_unsorted.vcf"
-    params:
-        ins="data/plink/{sample}_chr{chr}",
-        out="data/vcf/{sample}_chr{chr}_unsorted"
-    threads: 8
-    shell: "module load plink/1.90; "
-        "plink -bfile {params.ins} --memory 64 --real-ref-alleles "
+        "--memory 256 --real-ref-alleles "
         "--recode vcf --out {params.out}"
 
-rule sort_vcf:
+rule compress_vcf:
     input:
-        "data/vcf/{sample}_chr{chr}_unsorted.vcf"
+        rules.split_to_vcf.output
     output:
-        "final/{sample}_chr{chr}.vcf.gz"
+        "final/{sample}_chr{chrom}.vcf.gz"
     threads: 8
-    shell: "module load zlib tabix/0.2.6 vcftools/0.1.14-10; "
-        "vcf-sort {input} | bgzip -c > {output}"
+    shell: "module load tabix/0.2.6 bcftools/1.7; "
+        "bcftools sort {input} -Oz -o {output}; tabix -p vcf {output}"
 
-rule check_vcf:
-    input:
-        fasta=config["ref"]["fasta"],
-        vcf="final/{sample}_chr{chr}.vcf.gz"
-    output:
-        "log/{sample}_chr{chr}.check.log"
-    log: "log/{sample}_chr{chr}"
-    shell:
-        "source activate ./scripts/checkEnv; "
-        "python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}"
+if config['check_vcf']:
+    rule check_vcf:
+        input:
+            fasta=config["ref"],
+            vcf="final/{sample}_chr{chrom}.vcf.gz"
+        output:
+            "log/{sample}_chr{chrom}.check.log"
+        params:
+            py_env=config["checkEnv"]
+        log: "log/{sample}_chr{chrom}"
+        shell:
+            "source activate {params.py_env}; "
+            "python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}"

@@ -1,13 +1,19 @@
+# Directory where input plink filesets are.
+# No trailing / is required.
 directory: .
+
+# Select chromosomes you want to upload
 chr:
   from: 1
   to: 22
   chrlist: ~
     # use dashes here for list of others
+
+# Location of fasta file for flipping and VCFcheck
 ref:
-  prefix: /sc/orga/projects/LOAD/Public_Data/1000GP_Phase3/
-  prefix2: 1000GP_Phase3
-  fasta: /sc/orga/projects/LOAD/Brian/fasta/human_g1k_v37.fasta
+  /sc/orga/projects/LOAD/Brian/fasta/human_g1k_v37.fasta
+
+# Subject and sample level QC thresholds
 qc:
   #Hardy-Weinberg Equilibrium Cutoff
   hwe: 0.000001
@@ -17,3 +23,19 @@ qc:
   geno: 0.05
   #Subject level missingness cutoff
   mind: 0.05
+
+# Sample filtering
+
+# filename of samples to include (plink --keep)
+include_samp:
+
+# filename of samples to exclude (plink --remove)
+exclude_samp:
+
+# --keep accepts a space/tab-delimited text file with
+# family IDs in the first column and within-family IDs
+# in the second column, and removes all unlisted samples
+# from the current analysis. --remove does the same for
+# all listed samples.
+
+# Automatically added settings

@@ -34,4 +34,4 @@ By default, the pipeline looks for PLINK filesets in the base directory of your 
 
 ### Running:
 
-You can excecute the pipeline by navigating to the install folder and running `./run -j [number of desired threads]`. Use the `-c` switch to run on the cluster. If not running on the cluster, you can alternatively run the pipeline with `snakemake` and whatever options you wish to use.
+You can excecute the pipeline on a LSF cluster by navigating to the install folder and running `./run -j [number of desired threads] [additional options]`. You can alternatively run the pipeline with `snakemake` and whatever options you wish to use.

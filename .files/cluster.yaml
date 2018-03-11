@@ -7,3 +7,6 @@ __default__:
   time: '0:01'
 check_vcf:
   time: '0:04'
+flippyr:
+  cores: 1
+  mem: 6000

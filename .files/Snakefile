@@ -35,11 +35,11 @@ rule var_qc:
         geno = config["qc"]["geno"],
         hwe = config["qc"]["hwe"],
         maf = config["qc"]["maf"]
-    threads: 8
+    threads: 1
     shell: "module load plink/1.90; "
         "plink -bfile {params.ins} --geno {params.geno} --memory 128 "
         "--keep-allele-order --hwe {params.hwe} --maf {params.maf} "
-        "--make-bed --out {params.out}"
+        "--make-bed --out {params.out} --silent"
 
 rule subj_qc:
     input:
@@ -51,11 +51,11 @@ rule subj_qc:
         keep = keep_command
     output:
         expand("data/plink/{{sample}}_indivqc.{ext}", ext=BPLINK)
-    threads: 8
+    threads: 1
     shell: "module load plink/1.90; "
         "plink -bfile {params.ins} --memory 128 --keep-allele-order "
         "--mind {params.mind} --remove samp.irem {params.keep}"
-        "--make-bed --out {params.out}"
+        "--make-bed --out {params.out} --silent"
 
 rule flippyr:
     input:
@@ -68,7 +68,6 @@ rule flippyr:
         expand("data/plink/{{sample}}.{ext}", ext=["allele","flip","delete","log","log.tab"]),
         command = "data/plink/{sample}.runPlink",
         plink = expand("data/plink/{{sample}}_refmatched.{ext}", ext=BPLINK)
-    threads: 8
     run:
         import flippyr
         flippyr.writeFiles(input["fasta"],input["plink"][1],params["out"],

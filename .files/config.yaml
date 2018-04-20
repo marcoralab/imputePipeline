@@ -26,6 +26,9 @@ qc:
 
 # Sample filtering
 
+chr_callrate: False
+chunk_callrate: True
+
 # filename of samples to include (plink --keep)
 include_samp:
 

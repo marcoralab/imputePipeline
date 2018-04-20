@@ -4,9 +4,12 @@ __default__:
   queue: premium
   cores: 2
   mem: 3000
-  time: '0:01'
+  time: '1:00'
 check_vcf:
   time: '0:04'
 flippyr:
   cores: 1
   mem: 6000
+check_chunk_callrate:
+  cores: 1
+  mem: 5000

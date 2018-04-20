@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -e
+
+./run -s part1.smk "$@"
+./run "$@"

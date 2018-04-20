@@ -86,12 +86,17 @@ if [ $? -ne 0 ]; then
 fi
 
 echo Copying files
-for i in .files/{Snakefile,cluster.yaml,config.yaml,run}; do
+for i in .files/{Snakefile,part1.smk,cluster.yaml,config.yaml,run,run_all}; do
   cp $i $prefix
 done
 
-cp .files/scripts/parse_config.py ${prefix}/scripts/
-cp .files/scripts/__init__.py ${prefix}/scripts/
+for i in .files/scripts/{parse_config.py,__init__.py,fullchunker.py,chunk.py}; do
+  cp $i $prefix/scripts/
+done
+
+for i in .files/scripts/{process_imiss.R,process_chunk_imiss.R}; do
+  cp $i $prefix/scripts/
+done
 
 if [ $checkVCF -eq 1 ]; then
   cp .files/scripts/checkVCF.py ${prefix}/scripts/

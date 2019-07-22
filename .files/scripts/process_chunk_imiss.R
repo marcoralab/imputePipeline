@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 message("Loading Packages")
 
 packload <- function(...) { # partially from pacman

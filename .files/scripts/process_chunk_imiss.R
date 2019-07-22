@@ -1,7 +1,13 @@
-message("Loading Tidyverse")
+message("Loading Packages")
 
-suppressPackageStartupMessages(library(tidyverse))
-library(magrittr, quietly=TRUE, warn.conflicts = FALSE)
+packload <- function(...) { # partially from pacman
+  packages <- as.character(match.call(expand.dots = FALSE)[[2]])
+	pl <- function (X) suppressPackageStartupMessages(
+	  require(X, character.only = T))
+  no_output <- sapply(packages, pl)
+}
+
+packload(dplyr, readr, tibble, magrittr, stringr)
 
 args <- commandArgs(TRUE)
 

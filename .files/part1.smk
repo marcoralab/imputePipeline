@@ -1,17 +1,38 @@
 '''Snakefile for MIS preparation
-   Version 0.7'''
+   Version 0.9'''
 
 from scripts.parse_config import parser
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")
-shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
 
 BPLINK = ["bed", "bim", "fam"]
 
 CHROM, SAMPLE, INPATH, keep_command = parser(config)
 
 localrules: all, var_qc, subj_qc, split_to_vcf
+
+isMinerva = "hpc.mssm.edu" in socket.getfqdn()
+
+if isMinerva:
+    com = {'flippyr': 'flippyr', 'plink': 'plink --keep-allele-order',
+           'plink2': 'plink', 'bcftools': 'bcftools', 'R': 'Rscript', 'R2': 'R',
+           'king': 'king'}
+    loads = {'flippyr': 'module load plink/1.90b6.7', 'plink': 'module load plink/1.90b6.7',
+             'bcftools': 'module load bcftools/1.9',
+             'king': 'module unload gcc; module load king/2.1.6',
+             'R': ('module load R/3.5.3 pandoc/2.1.3 udunits/2.2.26; ',
+                   'RSTUDIO_PANDOC=$(which pandoc)')}
+else:
+    com = {'flippyr': 'flippyr',
+           'plink': 'plink --keep-allele-order', 'plink2': 'plink',
+           'bcftools': 'bcftools', 'R': 'Rscript', 'R2': 'R', 'king': 'king'}
+    loads = {'flippyr': 'echo running flippyr', 'plink': 'echo running plink',
+             'bcftools': 'echo running bcftools',  'R': 'echo running R',
+             'king': 'echo running KING'}
+
+if isMinerva:
+    shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
 
 if config['chr_callrate']:
     rule all:
@@ -45,8 +66,8 @@ rule var_qc:
         maf = config["qc"]["maf"]
     threads: 1
     shell:
-        "module load plink/1.90; "
-        "plink -bfile {params.ins} --geno {params.geno} --memory 128 "
+        "{loads[plink]}; "
+        "{com[plink]} -bfile {params.ins} --geno {params.geno} --memory 128 "
         "--keep-allele-order --hwe {params.hwe} --maf {params.maf} "
         "--make-bed --out {params.out} --silent"
 
@@ -62,8 +83,8 @@ rule subj_qc:
         expand("data/plink/{{sample}}_indivqc.{ext}", ext=BPLINK)
     threads: 1
     shell:
-        "module load plink/1.90; "
-        "plink -bfile {params.ins} --memory 128 --keep-allele-order "
+        "{loads[plink]}; "
+        "plink -bfile {params.ins} --memory 128 "
         "--mind {params.mind} --remove samp.irem {params.keep}"
         "--make-bed --out {params.out} --silent"
 
@@ -83,7 +104,7 @@ rule flippyr:
         import flippyr
         flippyr.writeFiles(input["fasta"], input["plink"][1], params["out"],
                            silent=False, plink=False, p_suff=params["suff"])
-        shell("module load plink/1.90; bash {}".format(output["command"]))
+        shell("{plink}; bash {}".format(output["command"], plink=loads[plink]))
 
 # Split, sort and compress
 
@@ -97,8 +118,8 @@ rule split_to_vcf:  # Split plink files into chromosomes.
     output:
         "data/{sample}_chr{chrom}_unsorted.vcf"
     shell:
-        "module load plink/1.90; "
-        "plink -bfile {params.ins} --chr {params.c} "
+        "{loads[plink]}; "
+        "{com[plink2]} -bfile {params.ins} --chr {params.c} "
         "--memory 256 --real-ref-alleles "
         "--recode vcf --out {params.out}"
 
@@ -111,7 +132,7 @@ rule all_to_vcf:
     output:
         "data/{sample}_chrall_unsorted.vcf"
     shell:
-        "module load plink/1.90; "
+        "{loads[plink]}; "
         "plink -bfile {params.ins} "
         "--memory 256 --real-ref-alleles "
         "--recode vcf --out {params.out}"
@@ -123,9 +144,9 @@ rule compress_vcf_allchr:
         "data/{sample}_preCallcheck.vcf.gz"
     threads: 8
     shell:
-        "module load bcftools/1.7; "
-        "bcftools sort {input} -Oz -o {output}; "
-        "bcftools index -t {output}"
+        "{loads[bcftools]}; "
+        "{com[bcftools]} sort {input} -Oz -o {output}; "
+        "{com[bcftools]} index -t {output}"
 
 rule make_chunk_yaml:
     input:
@@ -142,9 +163,9 @@ rule compress_vcf_precallrate:
         "data/{sample}_chr{chrom}_preCallcheck.vcf.gz"
     threads: 8
     shell:
-        "module load bcftools/1.7; "
-        "bcftools sort {input} -Oz -o {output}; "
-        "bcftools index -t {output}"
+        "{loads[bcftools]}; "
+        "{com[bcftools]} sort {input} -Oz -o {output}; "
+        "{com[bcftools]} index -t {output}"
 
 rule compress_vcf_nocallrate:
     input:
@@ -153,6 +174,6 @@ rule compress_vcf_nocallrate:
         "final/{sample}_chr{chrom}.vcf.gz"
     threads: 8
     shell:
-        "module load bcftools/1.7; "
-        "bcftools sort {input} -Oz -o {output}; "
-        "bcftools index -t {output}"
+        "{loads[bcftools]}; "
+        "{com[bcftools]} sort {input} -Oz -o {output}; "
+        "{com[bcftools]} index -t {output}"

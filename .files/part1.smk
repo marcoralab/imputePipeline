@@ -113,10 +113,10 @@ rule split_to_vcf:  # Split plink files into chromosomes.
         rules.flippyr.output.plink
     params:
         ins = "data/plink/{sample}_refmatched",
-        out = "data/{sample}_chr{chrom}_unsorted",
+        out = "data/{sample}.chr{chrom}_unsorted",
         c = "{chrom}"
     output:
-        "data/{sample}_chr{chrom}_unsorted.vcf"
+        "data/{sample}.chr{chrom}_unsorted.vcf"
     shell:
         "{loads[plink]}; "
         "{com[plink2]} -bfile {params.ins} --chr {params.c} "
@@ -141,7 +141,7 @@ rule compress_vcf_allchr:
     input:
         rules.all_to_vcf.output
     output:
-        "data/{sample}_preCallcheck.vcf.gz"
+        "data/{sample}_chrall_preCallcheck.vcf.gz"
     threads: 8
     shell:
         "{loads[bcftools]}; "

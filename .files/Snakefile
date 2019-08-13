@@ -1,5 +1,5 @@
 '''Snakefile for MIS preparation
-   Version 0.7'''
+   Version 0.8'''
 
 from scripts.parse_config import parser
 
@@ -10,6 +10,26 @@ shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
 BPLINK = ["bed", "bim", "fam"]
 
 CHROM, SAMPLE, INPATH, keep_command = parser(config)
+
+isMinerva = "hpc.mssm.edu" in socket.getfqdn()
+
+if isMinerva:
+    shell.prefix(". ~/.bashrc; PATH=" + config["anaconda"] + ":$PATH; ")
+    com = {'plink': 'plink --keep-allele-order',
+           'bcftools': 'bcftools', 'R': 'Rscript',
+           'vcftools': 'vcftools'}
+    loads = {'plink': 'module load plink/1.90b6.10',
+             'bcftools': 'module load bcftools/1.9',
+             'R': 'module load R/3.5.3',
+             'vcftools': 'module load vcftools'}
+else:
+    com = {'plink': 'plink --keep-allele-order',
+           'bcftools': 'bcftools', 'R': 'Rscript',
+           'vcftools': 'vcftools'}
+    loads = {'plink': 'echo running plink',
+             'bcftools': 'echo running bcftools',
+             'R': 'echo running R',
+             'vcftools': 'echo running vcftools'}
 
 localrules: all
 
@@ -33,8 +53,8 @@ if config['chr_callrate']:
         params:
             out = "data/callrate/{sample}/chr{chrom}.sample_missingness"
         shell:
-            "module load vcftools; "
-            "vcftools --missing-indv --gzvcf {input} --out {params.out}"
+            "{loads[vcftools]}; "
+            "{com[vcftools]} --missing-indv --gzvcf {input} --out {params.out}"
 
     rule process_chr_callrate:
         input:
@@ -45,8 +65,8 @@ if config['chr_callrate']:
         params:
             dir = "data/callrate/{sample}"
         shell:
-            "module load R/3.4.3; "
-            "Rscript scripts/process_imiss.R {params.dir} 0.2"
+            "{loads[R]}; "
+            "{com[R]} scripts/process_imiss.R {params.dir} 0.2"
 
 
 def chunkfiles(wildcards):
@@ -72,8 +92,8 @@ if config['chunk_callrate']:
             out = "data/callrate/{sample}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness",
             ranges = "--chr {chrom} --from-bp {range_from} --to-bp {range_through}"
         shell:
-            "module load vcftools; "
-            "vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}"
+            "{loads[vcftools]}; "
+            "{com[vcftools]} --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}"
 
     rule process_chunk_callrate:
         input: chunkfiles
@@ -82,8 +102,8 @@ if config['chunk_callrate']:
         params:
             dir = "data/callrate/{sample}"
         shell:
-            "module load R/3.4.3; "
-            "Rscript scripts/process_chunk_imiss.R {params.dir}"
+            "{loads[R]}; "
+            "{com[R]} scripts/process_chunk_imiss.R {params.dir}"
 
 rule apply_irem:
     input:
@@ -92,8 +112,8 @@ rule apply_irem:
     output:
         "final/{sample}_chr{chrom}.vcf.gz"
     shell:
-        "module load bcftools/1.7; "
-        "bcftools view -S ^{input.irem} -Oz -o {output} {input.vcf}; "
+        "{loads[bcftools]}; "
+        "{com[bcftools]} view -S ^{input.irem} -Oz -o {output} {input.vcf}; "
         "bcftools index -t {output}"
 
 if config['check_vcf']:

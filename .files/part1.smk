@@ -18,11 +18,14 @@ if isMinerva:
     com = {'flippyr': 'flippyr', 'plink': 'plink --keep-allele-order',
            'plink2': 'plink', 'bcftools': 'bcftools', 'R': 'Rscript', 'R2': 'R',
            'king': 'king'}
-    loads = {'flippyr': 'module load plink/1.90b6.7', 'plink': 'module load plink/1.90b6.7',
-             'bcftools': 'module load bcftools/1.9',
-             'king': 'module unload gcc; module load king/2.1.6',
-             'R': ('module load R/3.5.3 pandoc/2.1.3 udunits/2.2.26; ',
-                   'RSTUDIO_PANDOC=$(which pandoc)')}
+    loads = {'flippyr': 'module load plink/1.90b6.7'.format(plink=config['modules']['plink']),
+             'plink': 'module load plink/1.90b6.7'.format(plink=config['modules']['plink']),
+             'bcftools': 'module load {bcftools}'.format(bcftools=config['modules']['bcftools']),
+             'king': 'module unload gcc; module load {king}'.format(king=config['modules']['king']),
+             'R': ('module load {r} {pandoc} {udunits}; ',
+                   'RSTUDIO_PANDOC=$(which pandoc)').format(r=config['modules']['R'],
+                                                            pandoc==config['modules']['pandoc'],
+                                                            udunits==config['modules']['udunits'])}
 else:
     com = {'flippyr': 'flippyr',
            'plink': 'plink --keep-allele-order', 'plink2': 'plink',

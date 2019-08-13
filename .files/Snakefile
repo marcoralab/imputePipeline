@@ -18,10 +18,10 @@ if isMinerva:
     com = {'plink': 'plink --keep-allele-order',
            'bcftools': 'bcftools', 'R': 'Rscript',
            'vcftools': 'vcftools'}
-    loads = {'plink': 'module load plink/1.90b6.10',
-             'bcftools': 'module load bcftools/1.9',
-             'R': 'module load R/3.5.3',
-             'vcftools': 'module load vcftools'}
+    loads = {'plink': 'module load {plink}'.format(plink=config['modules']['plink']),
+             'bcftools': 'module load {bcftools}'.format(bcftools=config['modules']['bcftools']),
+             'R': 'module load {r}'.format(r=config['modules']['R']),
+             'vcftools': 'module load {vcftools}'.format(vcftools=config['modules']['vcftools'])}
 else:
     com = {'plink': 'plink --keep-allele-order',
            'bcftools': 'bcftools', 'R': 'Rscript',

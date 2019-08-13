@@ -18,8 +18,8 @@ if isMinerva:
     com = {'flippyr': 'flippyr', 'plink': 'plink --keep-allele-order',
            'plink2': 'plink', 'bcftools': 'bcftools', 'R': 'Rscript', 'R2': 'R',
            'king': 'king'}
-    loads = {'flippyr': 'module load plink/1.90b6.7'.format(plink=config['modules']['plink']),
-             'plink': 'module load plink/1.90b6.7'.format(plink=config['modules']['plink']),
+    loads = {'flippyr': 'module load {plink}'.format(plink=config['modules']['plink']),
+             'plink': 'module load {plink}'.format(plink=config['modules']['plink']),
              'bcftools': 'module load {bcftools}'.format(bcftools=config['modules']['bcftools']),
              'king': 'module unload gcc; module load {king}'.format(king=config['modules']['king']),
              'R': ('module load {r} {pandoc} {udunits}; ',

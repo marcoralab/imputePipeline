@@ -2,6 +2,7 @@
    Version 0.9'''
 
 from scripts.parse_config import parser
+import socket
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")

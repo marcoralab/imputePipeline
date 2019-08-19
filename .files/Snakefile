@@ -86,7 +86,7 @@ def chunkfiles(wildcards):
 if config['chunk_callrate']:
     rule check_chunk_callrate:
         input:
-            vcf = "data/{sample}_preCallcheck.vcf.gz"
+            vcf = "data/{sample}_chrall_preCallcheck.vcf.gz"
         output:
             "data/callrate/{sample}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss"
         params:

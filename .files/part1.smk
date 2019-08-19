@@ -23,10 +23,10 @@ if isMinerva:
              'plink': 'module load {plink}'.format(plink=config['modules']['plink']),
              'bcftools': 'module load {bcftools}'.format(bcftools=config['modules']['bcftools']),
              'king': 'module unload gcc; module load {king}'.format(king=config['modules']['king']),
-             'R': ('module load {r} {pandoc} {udunits}; ',
+             'R': ('module load {r} {pandoc} {udunits}; '
                    'RSTUDIO_PANDOC=$(which pandoc)').format(r=config['modules']['R'],
-                                                            pandoc==config['modules']['pandoc'],
-                                                            udunits==config['modules']['udunits'])}
+                                                            pandoc=config['modules']['pandoc'],
+                                                            udunits=config['modules']['udunits'])}
 else:
     com = {'flippyr': 'flippyr',
            'plink': 'plink --keep-allele-order', 'plink2': 'plink',
@@ -36,7 +36,7 @@ else:
              'king': 'echo running KING'}
 
 if isMinerva:
-    shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
+    shell.prefix(". ~/.bashrc; PATH=" + config["anaconda"] + ":$PATH; ")
 
 if config['chr_callrate']:
     rule all:
@@ -108,7 +108,7 @@ rule flippyr:
         import flippyr
         flippyr.writeFiles(input["fasta"], input["plink"][1], params["out"],
                            silent=False, plink=False, p_suff=params["suff"])
-        shell("{plink}; bash {}".format(output["command"], plink=loads[plink]))
+        shell("{plink}; bash {runplink}".format(runplink=output["command"], plink=loads["plink"]))
 
 # Split, sort and compress
 

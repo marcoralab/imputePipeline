@@ -72,7 +72,7 @@ rule var_qc:
     shell:
         "{loads[plink]}; "
         "{com[plink]} -bfile {params.ins} --geno {params.geno} --memory 128 "
-        "--keep-allele-order --hwe {params.hwe} --maf {params.maf} "
+        "--hwe {params.hwe} --maf {params.maf} "
         "--make-bed --out {params.out} --silent"
 
 rule subj_qc:

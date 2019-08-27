@@ -43,7 +43,7 @@ exclude_samp:
 
 modules:
   plink: "plink/1.90b6.10"
-  bcftools: "bcftools/1.9
+  bcftools: "bcftools/1.9"
   R: "R/3.5.3"
   pandoc: "pandoc/2.6"
   udunits: "udunits/2.2.26"

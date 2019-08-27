@@ -137,7 +137,7 @@ rule all_to_vcf:
         "data/{sample}_chrall_unsorted.vcf"
     shell:
         "{loads[plink]}; "
-        "plink -bfile {params.ins} "
+        "{com[plink2]} -bfile {params.ins} "
         "--memory 256 --real-ref-alleles "
         "--recode vcf --out {params.out}"
 

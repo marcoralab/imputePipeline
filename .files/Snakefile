@@ -3,10 +3,12 @@
 
 from scripts.parse_config import parser
 import socket
+import sys
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")
-shell.prefix("PATH=" + config["anaconda"] + ":$PATH; ")
+anacondapath = sys.exec_prefix + "/bin"
+shell.prefix("PATH={}:$PATH; ".format(anacondapath))
 
 BPLINK = ["bed", "bim", "fam"]
 

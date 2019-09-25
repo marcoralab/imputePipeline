@@ -104,10 +104,6 @@ fi
 
 mkdir ${prefix}/.snakejob
 
-echo Adding Anaconda path to config file
-echo "anaconda: $(conda info --root)/bin" >> ${prefix}/config.yaml
-
-
 if [ $checkVCF -eq 1 ]; then
   echo "Enabling checkVCF in config file"
   echo "check_vcf: True" >> ${prefix}/config.yaml

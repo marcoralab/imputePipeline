@@ -49,6 +49,3 @@ modules:
   udunits: "udunits/2.2.26"
   king: "king/2.1.6"
   vcftools: "vcftools/0.1.15"
-
-
-# Automatically added settings

@@ -3,6 +3,7 @@
 
 from scripts.parse_config import parser
 import socket
+import sys
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")
@@ -36,7 +37,8 @@ else:
              'king': 'echo running KING'}
 
 if isMinerva:
-    shell.prefix(". ~/.bashrc; PATH=" + config["anaconda"] + ":$PATH; ")
+    anacondapath = sys.exec_prefix + "/bin"
+    shell.prefix(". ~/.bashrc; PATH={}:$PATH; ".format(anacondapath))
 
 if config['chr_callrate']:
     rule all:

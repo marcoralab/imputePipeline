@@ -2,8 +2,8 @@ __default__:
   project: acc_LOAD
   partition: bode
   queue: premium
-  cores: 2
-  mem: 3000
+  cores: 6
+  mem: 5000
   time: '1:00'
 check_vcf:
   time: '0:04'

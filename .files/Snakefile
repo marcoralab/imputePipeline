@@ -7,8 +7,6 @@ import sys
 
 configfile: "config.yaml"
 shell.executable("/bin/bash")
-anacondapath = sys.exec_prefix + "/bin"
-shell.prefix("PATH={}:$PATH; ".format(anacondapath))
 
 BPLINK = ["bed", "bim", "fam"]
 
@@ -17,7 +15,10 @@ CHROM, SAMPLE, INPATH, keep_command = parser(config)
 isMinerva = "hpc.mssm.edu" in socket.getfqdn()
 
 if isMinerva:
-    shell.prefix(". ~/.bashrc; PATH=" + config["anaconda"] + ":$PATH; ")
+    anacondapath = sys.exec_prefix + "/bin"
+    shell.prefix(". ~/.bashrc; PATH={}:$PATH; ".format(anacondapath))
+
+if isMinerva:
     com = {'plink': 'plink --keep-allele-order',
            'bcftools': 'bcftools', 'R': 'Rscript',
            'vcftools': 'vcftools'}

@@ -73,7 +73,7 @@ rule var_qc:
     threads: 1
     shell:
         "{loads[plink]}; "
-        "{com[plink]} -bfile {params.ins} --geno {params.geno} --memory 128 "
+        "{com[plink]} -bfile {params.ins} --geno {params.geno} --memory 2560 "
         "--hwe {params.hwe} --maf {params.maf} "
         "--make-bed --out {params.out} --silent"
 
@@ -90,7 +90,7 @@ rule subj_qc:
     threads: 1
     shell:
         "{loads[plink]}; "
-        "plink -bfile {params.ins} --memory 128 "
+        "plink -bfile {params.ins} --memory 1280 "
         "--mind {params.mind} --remove samp.irem {params.keep}"
         "--make-bed --out {params.out} --silent"
 

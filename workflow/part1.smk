@@ -10,7 +10,7 @@ BPLINK = ['bed', 'bim', 'fam']
 
 CHROM, SAMPLE, INPATH, keep_command = parser(config)
 
-localrules: all, var_qc, subj_qc, split_to_vcf
+#localrules: all, var_qc, subj_qc, split_to_vcf
 
 # Pre-split QC
 
@@ -81,7 +81,7 @@ rule split_to_vcf:  # Split plink files into chromosomes.
     shell:
         '''
 plink --bfile {params.ins} --chr {params.c} --memory 256 --real-ref-alleles \
-  --recode vcf bgz --out {params.out}
+  --recode vcf bgz --out {params.out} --silent
 '''
 
 rule sort_vcf_precallrate:

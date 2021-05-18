@@ -4,14 +4,11 @@
 from scripts.parse_config import parser
 
 configfile: 'config/config.yaml'
-include: 'part1.smk'
 shell.executable('/bin/bash')
 
 BPLINK = ['bed', 'bim', 'fam']
 
 CHROM, SAMPLE, INPATH, keep_command = parser(config)
-
-include: 'part1.smk'
 
 localrules: all
 
@@ -26,6 +23,7 @@ else:
             expand('final/{sample}_chr{chrom}.vcf.gz',
                    sample=SAMPLE, chrom=CHROM)
 
+include: 'part1.smk'
 if config['chr_callrate']:
     include: 'chr_callrate.smk'
 elif config['chunk_callrate']:

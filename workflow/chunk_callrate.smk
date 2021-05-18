@@ -56,7 +56,7 @@ rule check_chunk_callrate:
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}'
+vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
 '''
 
 rule process_chunk_callrate:
@@ -65,4 +65,4 @@ rule process_chunk_callrate:
     params:
         dir = 'data/callrate/{sample}'
     conda: 'envs/r.yaml'
-    shell: 'Rscript scripts/process_chunk_imiss.R {params.dir}'
+    shell: 'Rscript workflow/scripts/process_chunk_imiss.R {params.dir}'

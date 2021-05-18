@@ -46,6 +46,7 @@ rule apply_irem:
         vcf = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz',
         tbi = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz.tbi'
     output: 'final/{sample}_chr{chrom}.vcf.gz'
+    conda: 'envs/bcftools.yaml'
     shell:
         '''
 bcftools view -S ^{input.irem} -Oz -o {output} {input.vcf}

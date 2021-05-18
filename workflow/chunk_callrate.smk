@@ -41,6 +41,7 @@ checkpoint make_chunk_yaml:
         vcf = rules.sort_vcf_allchr.output.vcf,
         tbi = rules.sort_vcf_allchr.output.tbi
     output: 'data/callrate/{sample}.chunks.json'
+    conda: 'envs/chunking.yaml'
     script: 'scripts/fullchunker.py'
 
 rule check_chunk_callrate:

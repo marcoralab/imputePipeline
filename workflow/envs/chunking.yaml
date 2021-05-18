@@ -1,0 +1,4 @@
+channels:
+    - bioconda
+dependencies:
+    - cyvcf2=0.30.8

@@ -4,33 +4,34 @@ message("Loading Packages")
 
 packload <- function(...) { # partially from pacman
   packages <- as.character(match.call(expand.dots = FALSE)[[2]])
-	pl <- function (X) suppressPackageStartupMessages(
-	  require(X, character.only = T))
+  pl <- function(x) {
+    suppressPackageStartupMessages(require(x, character.only = T))
+  }
   no_output <- sapply(packages, pl)
 }
 
 packload(dplyr, readr, tibble, magrittr, stringr)
 
-args <- commandArgs(TRUE)
+path <- path.expand(snakemake@params[["dir"]])
+threshold <- as.double(snakemake@params[["threshold"]])
+chunk_variant_count_min <- as.integer(
+  snakemake@params[["chunk_variant_count_min"]])
+f_list <- snakemake@input
 
-path <- path.expand(args[1])
-threshold <- 0.5
-chunk_variant_count_min <- 50
-
-f_list <- list.files(path = path, pattern = "*.sample_missingness.imiss")
+#f_list <- list.files(path = path, pattern = "*.sample_missingness.imiss") %>%
+#  paste0(path, "/", .)
 
 message("Reading Missingness")
 
 df <- tibble(INDV = character())
 for (imiss in f_list) {
-  chrom = str_match(imiss, "(chr.+)\\.sam")[1,2]
-  df2 <- read_tsv(paste0(path,"/",imiss),
-                          col_types = cols(
-                                           .default = "i",
-                                           INDV = "c",
-                                           F_MISS = "d")) 
-  N <- max(df2$N_DATA)
-  if (N > chunk_variant_count_min ) {
+  chrom <- str_match(basename(imiss), "(chr.+)\\.sam")[1, 2]
+  df2 <- read_tsv(imiss, col_types = cols(
+    .default = "i",
+    INDV = "c",
+    F_MISS = "d"))
+  n <- max(df2$N_DATA)
+  if (n > chunk_variant_count_min) {
     df <- df2 %>%
       select(INDV, !!chrom := F_MISS) %>%
       left_join(df, by = "INDV")

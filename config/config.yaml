@@ -1,6 +1,6 @@
 # Directory where input plink filesets are.
 # No trailing / is required.
-directory: /sc/arion/projects/LOAD/Data/ADRC/GSA_2018/GSA1234567/
+directory: /sc/arion/projects/LOAD/shea/data/ADRC_CFI/plink
 
 # Select chromosomes you want to upload
 chr:

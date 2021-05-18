@@ -14,6 +14,7 @@ rule process_chr_callrate:
                'sample_missingness.imiss', chrom=CHROM)
     output: 'data/callrate/{sample}/chrall.irem'
     params:
-        dir = 'data/callrate/{sample}'
+        dir = 'data/callrate/{sample}',
+        threshold = 0.2
     conda: 'envs/r.yaml'
-    shell: 'Rscript scripts/process_imiss.R {params.dir} 0.2'
+    script: 'scripts/process_imiss.R {params.dir}'

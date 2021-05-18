@@ -63,6 +63,8 @@ rule process_chunk_callrate:
     input: chunkfiles
     output: 'data/callrate/{sample}/chrall.irem'
     params:
-        dir = 'data/callrate/{sample}'
+        dir = 'data/callrate/{sample}',
+        threshold = 0.5,
+        chunk_variant_count_min = 50
     conda: 'envs/r.yaml'
-    shell: 'Rscript workflow/scripts/process_chunk_imiss.R {params.dir}'
+    script: 'scripts/process_chunk_imiss.R'

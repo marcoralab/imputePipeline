@@ -5,3 +5,5 @@ final/
 ref/
 sandbox/
 temp/
+.ropeproject
+__pycache__

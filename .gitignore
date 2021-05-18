@@ -1,0 +1,7 @@
+.snakejob/
+.snakemake/
+data/
+final/
+ref/
+sandbox/
+temp/

@@ -2,4 +2,4 @@ channels:
     - bioconda
 dependencies:
     - flippyr=0.4.0
-    - plink=1.90b6.18    
+    - plink=1.90b6.18

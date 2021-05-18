@@ -1,6 +1,6 @@
 # Directory where input plink filesets are.
 # No trailing / is required.
-directory: data
+directory: /sc/arion/projects/LOAD/Data/ADRC/GSA_2018/GSA1234567/
 
 # Select chromosomes you want to upload
 chr:
@@ -41,13 +41,5 @@ exclude_samp:
 # from the current analysis. --remove does the same for
 # all listed samples.
 
-modules:
-  plink: "plink/1.90b6.10"
-  bcftools: "bcftools/1.9"
-  R: "R/4.0.3"
-  pandoc: "pandoc/2.6"
-  udunits: "udunits/2.2.26"
-  king: "king/2.1.6"
-  vcftools: "vcftools/0.1.15"
 check_vcf: False
 checkEnv: checkVCF

@@ -1,0 +1,69 @@
+'''Snakefile for MIS preparation
+   Version 1.0'''
+
+from scripts.parse_config import parser
+
+configfile: 'config/config.yaml'
+include: 'part1.smk'
+shell.executable('/bin/bash')
+
+BPLINK = ['bed', 'bim', 'fam']
+
+CHROM, SAMPLE, INPATH, keep_command = parser(config)
+
+include: 'part1.smk'
+
+localrules: all
+
+if config['check_vcf']:
+    rule all:
+        input:
+            expand('log/{sample}_chr{chrom}.check.log',
+                   sample=SAMPLE, chrom=CHROM)
+else:
+    rule all:
+        input:
+            expand('final/{sample}_chr{chrom}.vcf.gz',
+                   sample=SAMPLE, chrom=CHROM)
+
+if config['chr_callrate']:
+    include: 'chr_callrate.smk'
+elif config['chunk_callrate']:
+    include: 'chunk_callrate.smk'
+else:
+    rule compress_vcf_nocallrate:
+        input: rules.split_to_vcf.output
+        output: 'final/{sample}_chr{chrom}.vcf.gz'
+        threads: 8
+        conda: 'envs/bcftools.yaml'
+        shell:
+            '''
+    bcftools sort {input} -Oz -o {output}
+    bcftools index -t {output}
+    '''
+
+rule apply_irem:
+    input:
+        irem = 'data/callrate/{sample}/chrall.irem',
+        vcf = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz',
+        tbi = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz.tbi'
+    output: 'final/{sample}_chr{chrom}.vcf.gz'
+    shell:
+        '''
+bcftools view -S ^{input.irem} -Oz -o {output} {input.vcf}
+bcftools index -t {output}
+'''
+
+if config['check_vcf']:
+    rule check_vcf:
+        input:
+            fasta = config['ref'],
+            vcf = 'final/{sample}_chr{chrom}.vcf.gz'
+        output:
+            'log/{sample}_chr{chrom}.check.log'
+        params:
+            py_env = config['checkEnv']
+        log: 'log/{sample}_chr{chrom}'
+        shell:
+            'source activate {params.py_env}; '
+            'python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}'

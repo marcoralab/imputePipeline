@@ -24,8 +24,8 @@ def make_chunk_json(fname, chunks):
         json.dump(chunkdict, file)
 
 if __name__ == "__main__":
-    in_name = sys.argv[1]
-    out_name = sys.argv[2]
+    in_name = snakemake.input[0]
+    out_name = snakemake.output[0]
     vcf = cyvcf2.VCFReader(in_name)
     bounds = contig_bounds(vcf)
     chunks = chunk_contigs(bounds)

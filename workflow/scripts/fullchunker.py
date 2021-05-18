@@ -1,4 +1,4 @@
-from chunk import chunker
+from chunks import chunker
 import cyvcf2
 import sys
 import json

@@ -76,7 +76,7 @@ rule split_to_vcf:  # Split plink files into chromosomes.
         ins = 'data/plink/{sample}_refmatched',
         out = 'data/{sample}.chr{chrom}_unsorted',
         c = '{chrom}'
-    output: temp('data/{sample}.chr{chrom}_unsorted.vcf.bgz')
+    output: temp('data/{sample}.chr{chrom}_unsorted.vcf.gz')
     conda: 'envs/plink.yaml'
     shell:
         '''

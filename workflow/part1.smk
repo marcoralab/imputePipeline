@@ -54,6 +54,7 @@ rule flippyr:
         fasta = config['ref'],
         plink = rules.subj_qc.output
     params:
+        bim = rules.subj_qc.params.out + '.bim',
         out = 'data/plink/{sample}',
         suff = '_refmatched'
     output:
@@ -62,7 +63,10 @@ rule flippyr:
         command = 'data/plink/{sample}.runPlink',
         plink = expand('data/plink/{{sample}}_refmatched.{ext}', ext=BPLINK)
     conda: 'envs/flippyr.yaml'
-    shell: 'flippyr -o {params.out} --outputSuffix {params.suff} --plink'
+    shell: '''
+flippyr -o {params.out} --outputSuffix {params.suff} --plink \
+  {input.fasta} {params.bim}
+'''
 
 # Split, sort and compress
 

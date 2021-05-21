@@ -22,4 +22,4 @@ Please review those files before starting.
 
 ### Data-file location:
 
-By default, the pipeline looks for PLINK filesets in the base directory of your installation. You can choose a different destination by editing `config.yaml`.
+By default, the pipeline looks for PLINK filesets in the base directory of your installation. You can choose a different destination by editing `config/config.yaml`.

@@ -3,7 +3,9 @@
 data/
 final/
 ref/
+log/
 sandbox/
 temp/
 .ropeproject
 __pycache__
+samp.irem

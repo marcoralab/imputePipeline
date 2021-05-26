@@ -48,7 +48,7 @@ rule subj_qc:
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --keep-allele-order --bfile {params.ins} --memory 1280 \
+plink --keep-allele-order --bfile {params.ins} --memory 8192 \
   --mind {params.mind} --remove samp.irem {params.keep} \
   --make-bed --out {params.out} --silent
 '''

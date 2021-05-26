@@ -108,7 +108,7 @@ plink --bfile {params.ins} --chr {params.c} --memory 8192 --real-ref-alleles \
 rule sort_vcf_precallrate:
     input: rules.split_to_vcf.output
     output:
-        vcf = temp('data/{sample}_chr{chrom}_preCallcheck.vcf.gz'),
+        vcf = temp('data/{sample}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz'),
         tbi = temp('data/{sample}_chr{chrom}_preCallcheck.vcf.gz.tbi')
     threads: 8
     conda: 'envs/bcftools.yaml'

@@ -15,10 +15,10 @@ ref:
 
 # Subject and sample level QC thresholds
 qc:
-  #Hardy-Weinberg Equilibrium Cutoff
   hwe: 0.000001
-  #MAF Cutoff
-  maf: 0.01
+  #Hardy-Weinberg Equilibrium Cutoff ("false" to skip)
+  #MAF Cutoff ("false" to skip)
+  maf: false
   #Variant level missingness cutoff
   geno: 0.05
   #Subject level missingness cutoff

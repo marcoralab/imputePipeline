@@ -80,7 +80,7 @@ rule split_to_vcf:  # Split plink files into chromosomes.
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --bfile {params.ins} --chr {params.c} --memory 256 --real-ref-alleles \
+plink --bfile {params.ins} --chr {params.c} --memory 8192 --real-ref-alleles \
   --recode vcf bgz --out {params.out} --silent
 '''
 

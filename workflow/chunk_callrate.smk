@@ -19,7 +19,7 @@ rule all_to_vcf:
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --bfile {params.ins} --memory 256 --real-ref-alleles \
+plink --bfile {params.ins} --memory 4096 --real-ref-alleles \
   --recode vcf bgz --out {params.out}
 '''
 
@@ -28,11 +28,14 @@ rule sort_vcf_allchr:
     output:
         vcf = temp('data/{sample}_chrall_preCallcheck.vcf.gz'),
         tbi = temp('data/{sample}_chrall_preCallcheck.vcf.gz.tbi')
+    params:
+        temp = "data/temp/{sample}"
     threads: 8
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-bcftools sort {input} -Oz -o {output.vcf}
+mkdir -p {params.temp}
+bcftools sort -Oz -o {output.vcf} --max-mem 39000M -T {params.temp} {input}
 bcftools index -t {output.vcf}
 '''
 

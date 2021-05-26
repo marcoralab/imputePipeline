@@ -12,8 +12,10 @@ flippyr:
   mem: 6000
 check_chunk_callrate:
   cores: 1
-  mem: 5000
+  mem: 5200
 concat:
   cores: 6
-  mem: 5000
+  mem: 5200
   time: 4:00
+sort_vcf_allchr:
+  cores: 8

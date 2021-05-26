@@ -14,6 +14,11 @@ CHROM, SAMPLE, INPATH, keep_command = parser(config)
 
 # Pre-split QC
 
+if config['qc']['maf']:
+    maf_cmd = '--maf ' + config['qc']['maf']
+else:
+    maf_cmd = ''
+
 rule var_qc:
     input: expand(INPATH + '{{sample}}.{ext}', ext=BPLINK)
     output: expand('data/plink/{{sample}}_varqc.{ext}', ext=BPLINK)
@@ -21,14 +26,13 @@ rule var_qc:
         ins = INPATH + '{sample}',
         out = 'data/plink/{sample}_varqc',
         geno = config['qc']['geno'],
-        hwe = config['qc']['hwe'],
-        maf = config['qc']['maf']
+        maf = maf_cmd
     threads: 1
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --keep-allele-order --bfile {params.ins} --memory 2560 \
-  --geno {params.geno} --hwe {params.hwe} --maf {params.maf} \
+plink --keep-allele-order --bfile {params.ins} --memory 8192 \
+  --geno {params.geno} {params.maf} \
   --make-bed --out {params.out} --silent
 '''
 
@@ -49,12 +53,29 @@ plink --keep-allele-order --bfile {params.ins} --memory 1280 \
   --make-bed --out {params.out} --silent
 '''
 
+if config['qc']['hwe']:
+    rule hwe_qc:
+        input: rules.subj_qc.output
+        output: temp(expand('data/plink/{{sample}}_hwe.{ext}', ext=BPLINK))
+        params:
+            ins = INPATH + '{sample}',
+            out = 'data/plink/{sample}_hwe',
+            hwe = config['qc']['hwe'],
+        threads: 1
+        conda: 'envs/plink.yaml'
+        shell:
+            '''
+plink --keep-allele-order --bfile {params.ins} --memory 8192 \
+  --hwe {params.hwe} 'midp' \
+  --make-bed --out {params.out} --silent
+'''
+
 rule flippyr:
     input:
         fasta = config['ref'],
-        plink = rules.subj_qc.output
+        plink = rules.hwe_qc.output if config['qc']['hwe'] else rules.subj_qc.output
     params:
-        bim = rules.subj_qc.params.out + '.bim',
+        bim = rules.hwe_qc.params.out + '.bim' if config['qc']['hwe'] else rules.subj_qc.params.out + '.bim',
         out = 'data/plink/{sample}',
         suff = '_refmatched'
     output:

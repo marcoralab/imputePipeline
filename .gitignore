@@ -7,5 +7,7 @@ log/
 sandbox/
 temp/
 .ropeproject
-__pycache__
+**/__pycache__/
 samp.irem
+samp.ikeep
+workflow/scripts/__pycache__/

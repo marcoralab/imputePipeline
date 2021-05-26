@@ -21,7 +21,7 @@ else:
 
 rule var_qc:
     input: expand(INPATH + '{{sample}}.{ext}', ext=BPLINK)
-    output: expand('data/plink/{{sample}}_varqc.{ext}', ext=BPLINK)
+    output: temp(expand('data/plink/{{sample}}_varqc.{ext}', ext=BPLINK))
     params:
         ins = INPATH + '{sample}',
         out = 'data/plink/{sample}_varqc',
@@ -43,7 +43,7 @@ rule subj_qc:
         out = 'data/plink/{sample}_indivqc',
         mind = config['qc']['mind'],
         keep = keep_command
-    output: expand('data/plink/{{sample}}_indivqc.{ext}', ext=BPLINK)
+    output: temp(expand('data/plink/{{sample}}_indivqc.{ext}', ext=BPLINK))
     threads: 1
     conda: 'envs/plink.yaml'
     shell:
@@ -82,7 +82,7 @@ rule flippyr:
         expand('data/plink/{{sample}}.{ext}',
                ext=['allele', 'flip', 'delete', 'log', 'log.tab']),
         command = 'data/plink/{sample}.runPlink',
-        plink = expand('data/plink/{{sample}}_refmatched.{ext}', ext=BPLINK)
+        plink = temp(expand('data/plink/{{sample}}_refmatched.{ext}', ext=BPLINK))
     conda: 'envs/flippyr.yaml'
     shell: '''
 flippyr -o {params.out} --outputSuffix {params.suff} --plink \

@@ -93,6 +93,6 @@ rule sort_vcf_precallrate:
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-bcftools sort {input} -Oz -o {output.vcf}
+bcftools sort -Oz -o {output.vcf} {input}
 bcftools index -t {output.vcf}
 '''

@@ -36,7 +36,7 @@ else:
         conda: 'envs/bcftools.yaml'
         shell:
             '''
-    bcftools sort {input} -Oz -o {output}
+    bcftools sort -Oz -o {output} {input}
     bcftools index -t {output}
     '''
 

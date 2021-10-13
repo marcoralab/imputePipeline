@@ -33,7 +33,8 @@ rule var_qc:
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --keep-allele-order --bfile {params.ins} --memory 8192 \
+plink --keep-allele-order --allow-extra-chr --chr 1-26,X,Y,XY,MT \
+  --bfile {params.ins} --memory 8192 \
   --geno {params.geno} {params.maf} \
   --make-bed --out {params.out} --silent
 '''
@@ -50,7 +51,8 @@ rule subj_qc:
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --keep-allele-order --bfile {params.ins} --memory 8192 \
+plink --keep-allele-order \
+  --bfile {params.ins} --memory 8192 \
   --mind {params.mind} --remove samp.irem {params.keep} \
   --make-bed --out {params.out} --silent
 '''
@@ -60,15 +62,21 @@ if config['qc']['hwe']:
         input: rules.subj_qc.output
         output: temp(expand('{{outdir}}/plink/{{cohort}}_hwe.{ext}', ext=BPLINK))
         params:
+<<<<<<< HEAD
             # ins = INPATH + '{cohort}',
             ins = rules.subj_qc.params.out,
             out = '{outdir}/plink/{cohort}_hwe',
+=======
+            ins = rules.subj_qc.params.out,
+            out = 'data/plink/{sample}_hwe',
+>>>>>>> b10ef78db7cefdfc7ad468c933db4dbf9e8b104c
             hwe = config['qc']['hwe'],
         threads: 1
         conda: 'envs/plink.yaml'
         shell:
             '''
-plink --keep-allele-order --bfile {params.ins} --memory 8192 \
+plink --keep-allele-order \
+  --bfile {params.ins} --memory 8192 \
   --hwe {params.hwe} 'midp' \
   --make-bed --out {params.out} --silent
 '''

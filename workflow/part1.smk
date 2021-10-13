@@ -62,14 +62,8 @@ if config['qc']['hwe']:
         input: rules.subj_qc.output
         output: temp(expand('{{outdir}}/plink/{{cohort}}_hwe.{ext}', ext=BPLINK))
         params:
-<<<<<<< HEAD
-            # ins = INPATH + '{cohort}',
             ins = rules.subj_qc.params.out,
             out = '{outdir}/plink/{cohort}_hwe',
-=======
-            ins = rules.subj_qc.params.out,
-            out = 'data/plink/{sample}_hwe',
->>>>>>> b10ef78db7cefdfc7ad468c933db4dbf9e8b104c
             hwe = config['qc']['hwe'],
         threads: 1
         conda: 'envs/plink.yaml'

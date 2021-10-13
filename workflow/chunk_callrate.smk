@@ -1,21 +1,21 @@
 def chunkfiles(wildcards):
     chrom = [str(x) for x in CHROM]
-    fname = checkpoints.make_chunk_yaml.get(sample=wildcards.sample).output[0]
+    fname = checkpoints.make_chunk_yaml.get(cohort=wildcards.cohort,outdir=wildcards.outdir).output[0]
     with fname.open() as chunkfile:
         chunks = json.load(chunkfile)
     chunks_proc = zip(chunks['chrom'], chunks['from'], chunks['through'])
-    files = ['{}/chr{}_from{}_through{}'.format(wildcards.sample, ch, fr, to)
+    files = ['{}/{}/chr{}_from{}_through{}'.format(wildcards.outdir, wildcards.cohort, ch, fr, to)
              for ch, fr, to in chunks_proc if ch in chrom]
-    outname = 'data/callrate/{}.sample_missingness.imiss'
-    files = [outname.format(x) for x in files]
+    outname = '{}/callrate/{}.sample_missingness.imiss'
+    files = [outname.format(wildcards.outdir, x) for x in files]
     return files
 
 rule all_to_vcf:
     input: rules.flippyr.output.plink
     params:
-        ins = 'data/plink/{sample}_refmatched',
-        out = 'data/{sample}_chrall_unsorted',
-    output: temp('data/{sample}_chrall_unsorted.vcf.gz')
+        ins = '{outdir}/plink/{cohort}_refmatched',
+        out = '{outdir}/{cohort}_chrall_unsorted',
+    output: temp('{outdir}/{cohort}_chrall_unsorted.vcf.gz')
     conda: 'envs/plink.yaml'
     shell:
         '''
@@ -26,10 +26,10 @@ plink --bfile {params.ins} --memory 4096 --real-ref-alleles \
 rule sort_vcf_allchr:
     input: rules.all_to_vcf.output
     output:
-        vcf = temp('data/{sample}_chrall_preCallcheck.vcf.gz'),
-        tbi = temp('data/{sample}_chrall_preCallcheck.vcf.gz.tbi')
+        vcf = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz'),
+        tbi = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz.tbi')
     params:
-        temp = "data/temp/{sample}"
+        temp = "{outdir}/temp/{cohort}"
     threads: 8
     conda: 'envs/bcftools.yaml'
     shell:
@@ -43,7 +43,7 @@ checkpoint make_chunk_yaml:
     input:
         vcf = rules.sort_vcf_allchr.output.vcf,
         tbi = rules.sort_vcf_allchr.output.tbi
-    output: 'data/callrate/{sample}.chunks.json'
+    output: '{outdir}/callrate/{cohort}.chunks.json'
     conda: 'envs/chunking.yaml'
     script: 'scripts/fullchunker.py'
 
@@ -52,21 +52,21 @@ rule check_chunk_callrate:
         vcf = rules.sort_vcf_allchr.output.vcf,
         tbi = rules.sort_vcf_allchr.output.tbi
     output:
-        'data/callrate/{sample}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
+        '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
-        out = 'data/callrate/{sample}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness',
+        out = '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness',
         ranges = '--chr {chrom} --from-bp {range_from} --to-bp {range_through}'
     conda: 'envs/bcftools.yaml'
     shell:
         '''
 vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
 '''
-
+# import ipdb; ipdb.set_trace()
 rule process_chunk_callrate:
     input: chunkfiles
-    output: 'data/callrate/{sample}/chrall.irem'
+    output: '{outdir}/callrate/{cohort}/chrall.irem'
     params:
-        dir = 'data/callrate/{sample}',
+        dir = '{outdir}/callrate/{cohort}',
         threshold = 0.5,
         chunk_variant_count_min = 50
     conda: 'envs/r.yaml'

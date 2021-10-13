@@ -1,7 +1,8 @@
 # Directory where input plink filesets are.
 # No trailing / is required.
+COHORT: 'test'
 directory: /sc/arion/projects/LOAD/shea/data/ADRC_CFI/plink
-
+out_dir: "output"
 # Select chromosomes you want to upload
 chr:
   from: 1

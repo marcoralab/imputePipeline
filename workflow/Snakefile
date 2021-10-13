@@ -1,29 +1,31 @@
 '''Snakefile for MIS preparation
    Version 1.0'''
 
-from scripts.parse_config import parser
+from scripts.parse_config_imputePrep import parser
 
 configfile: 'config/config.yaml'
 shell.executable('/bin/bash')
 
 BPLINK = ['bed', 'bim', 'fam']
+OUTDIR = config["out_dir"]
 
-CHROM, SAMPLE, INPATH, keep_command = parser(config)
+CHROM, COHORT, INPATH, keep_command = parser(config)
 
 localrules: all
 
 if config['check_vcf']:
     rule all:
         input:
-            expand('log/{sample}_chr{chrom}.check.log',
-                   sample=SAMPLE, chrom=CHROM)
+            expand('{outdir}/log/{cohort}_chr{chrom}.check.log',
+                   cohort=COHORT, chrom=CHROM, outdir = OUTDIR)
 else:
     rule all:
         input:
-            expand('final/{sample}_chr{chrom}.vcf.gz',
-                   sample=SAMPLE, chrom=CHROM)
+            expand('{outdir}/final/{cohort}_chr{chrom}.vcf.gz',
+                   cohort=COHORT, chrom=CHROM, outdir = OUTDIR)
 
 include: 'part1.smk'
+
 if config['chr_callrate']:
     include: 'chr_callrate.smk'
 elif config['chunk_callrate']:
@@ -31,7 +33,7 @@ elif config['chunk_callrate']:
 else:
     rule compress_vcf_nocallrate:
         input: rules.split_to_vcf.output
-        output: 'final/{sample}_chr{chrom}.vcf.gz'
+        output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
         threads: 8
         conda: 'envs/bcftools.yaml'
         shell:
@@ -42,10 +44,10 @@ else:
 
 rule apply_irem:
     input:
-        irem = 'data/callrate/{sample}/chrall.irem',
-        vcf = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz',
-        tbi = 'data/{sample}_chr{chrom}_preCallcheck.vcf.gz.tbi'
-    output: 'final/{sample}_chr{chrom}.vcf.gz'
+        irem = '{outdir}/callrate/{cohort}/chrall.irem',
+        vcf = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz',
+        tbi = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi'
+    output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
     conda: 'envs/bcftools.yaml'
     shell:
         '''
@@ -57,12 +59,12 @@ if config['check_vcf']:
     rule check_vcf:
         input:
             fasta = config['ref'],
-            vcf = 'final/{sample}_chr{chrom}.vcf.gz'
+            vcf = '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
         output:
-            'log/{sample}_chr{chrom}.check.log'
+            '{outdir}/log/{cohort}_chr{chrom}.check.log'
         params:
             py_env = config['checkEnv']
-        log: 'log/{sample}_chr{chrom}'
+        log: '{outdir}/log/{cohort}_chr{chrom}'
         shell:
             'source activate {params.py_env}; '
             'python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}'

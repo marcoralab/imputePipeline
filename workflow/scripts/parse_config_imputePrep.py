@@ -24,7 +24,10 @@ def parser(config):
 
     # Sample is every base name for the .bed files in the in_path directory
     expression = r"(^.*\/)(.*)(?=\.bed)"
-    sample = [re.search(expression, x)[2] for x in beds]
+    if config["COHORT"] is None:
+        cohort = [re.search(expression, x)[2] for x in beds]
+    else:
+        cohort = config["COHORT"]
 
     # Make copy file with exclusions, else make empty one
     if "exclude_samp" in config:
@@ -46,4 +49,4 @@ def parser(config):
     if ("include_samp" not in config) or (not keep):
         keep_command = ""
 
-    return chrom, sample, in_path, keep_command
+    return chrom, cohort, in_path, keep_command

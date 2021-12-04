@@ -5,6 +5,10 @@ rule check_chr_callrate:
     output: '{outdir}/callrate/{cohort}/chr{chrom}.sample_missingness.imiss'
     params:
         out = '{outdir}/callrate/{cohort}/chr{chrom}.sample_missingness'
+    threads: 4
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/bcftools.yaml'
     shell: 'vcftools --missing-indv --gzvcf {input.vcf} --out {params.out}'
 
@@ -16,5 +20,9 @@ rule process_chr_callrate:
     params:
         dir = '{outdir}/callrate/{cohort}',
         threshold = 0.2
+    threads: 4
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/r.yaml'
     script: 'scripts/process_imiss.R {params.dir}'

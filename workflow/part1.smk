@@ -29,7 +29,10 @@ rule var_qc:
         out = '{outdir}/plink/{cohort}_varqc',
         geno = config['qc']['geno'],
         maf = maf_cmd
-    threads: 1
+    threads: 2
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/plink.yaml'
     shell:
         '''
@@ -47,7 +50,10 @@ rule subj_qc:
         mind = config['qc']['mind'],
         keep = keep_command
     output: temp(expand('{{outdir}}/plink/{{cohort}}_indivqc.{ext}', ext=BPLINK))
-    threads: 1
+    threads: 2
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/plink.yaml'
     shell:
         '''
@@ -65,7 +71,10 @@ if config['qc']['hwe']:
             ins = rules.subj_qc.params.out,
             out = '{outdir}/plink/{cohort}_hwe',
             hwe = config['qc']['hwe'],
-        threads: 1
+        threads: 2
+        resources:
+            mem_mb = 8192,
+            time_min = 30
         conda: 'envs/plink.yaml'
         shell:
             '''
@@ -88,7 +97,11 @@ rule flippyr:
                ext=['allele', 'flip', 'delete', 'log', 'log.tab']),
         command = '{outdir}/plink/{cohort}.runPlink',
         plink = temp(expand('{{outdir}}/plink/{{cohort}}_refmatched.{ext}', ext=BPLINK))
-    container: 'docker://befh/flippyr:0.4.0'
+    threads: 1
+    resources:
+        mem_mb = 8192,
+        walltime = '48:00'
+    container: 'docker://befh/flippyr:0.5.3'
     shell: '''
 flippyr -o {params.out} --outputSuffix {params.suff} --plink \
   {input.fasta} {params.bim}
@@ -103,10 +116,14 @@ rule split_to_vcf:  # Split plink files into chromosomes.
         out = '{outdir}/{cohort}.chr{chrom}_unsorted',
         c = '{chrom}'
     output: temp('{outdir}/{cohort}.chr{chrom}_unsorted.vcf.gz')
+    threads: 2
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/plink.yaml'
     shell:
         '''
-plink --bfile {params.ins} --chr {params.c} --memory 8192 --real-ref-alleles \
+plink --bfile {params.ins} --chr {params.c} --memory 16000 --real-ref-alleles \
   --recode vcf bgz --out {params.out} --silent
 '''
 
@@ -115,10 +132,13 @@ rule sort_vcf_precallrate:
     output:
         vcf = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz'),
         tbi = temp('{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi')
-    threads: 8
+    threads: 4
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-bcftools sort -Oz -o {output.vcf} {input}
+bcftools sort --threads {threads} -Oz -o {output.vcf} {input}
 bcftools index -t {output.vcf}
 '''

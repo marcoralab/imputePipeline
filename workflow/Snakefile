@@ -34,11 +34,14 @@ else:
     rule compress_vcf_nocallrate:
         input: rules.split_to_vcf.output
         output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
-        threads: 8
+        threads: 4
+        resources:
+            mem_mb = 8192,
+            time_min = 30
         conda: 'envs/bcftools.yaml'
         shell:
             '''
-    bcftools sort -Oz -o {output} {input}
+    bcftools sort --threads {threads} -Oz -o {output} {input}
     bcftools index -t {output}
     '''
 
@@ -48,10 +51,14 @@ rule apply_irem:
         vcf = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz',
         tbi = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi'
     output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
+    threads: 4
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-bcftools view -S ^{input.irem} -Oz -o {output} {input.vcf}
+bcftools view --threads {threads} -S ^{input.irem} -Oz -o {output} {input.vcf}
 bcftools index -t {output}
 '''
 
@@ -65,6 +72,9 @@ if config['check_vcf']:
         params:
             py_env = config['checkEnv']
         log: '{outdir}/log/{cohort}_chr{chrom}'
+        resources:
+            mem_mb = 4096,
+            time_min = 30
         shell:
             'source activate {params.py_env}; '
             'python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}'

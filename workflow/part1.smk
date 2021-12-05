@@ -16,7 +16,7 @@ rule var_qc:
     input: multiext(INPATH + '/{cohort}', ".bim", ".bed", ".fam")
     output: temp(expand('{{outdir}}/plink/{{cohort}}_varqc.{ext}', ext=BPLINK))
     params:
-        ins = INPATH + '{cohort}',
+        ins = INPATH + '/{cohort}',
         out = '{outdir}/plink/{cohort}_varqc',
         geno = config['qc']['geno'],
         maf = maf_cmd
@@ -111,7 +111,7 @@ rule rename_chrom:
     resources:
         mem_mb = 256,
         time_min = 10
-    script: '../scripts/rename_chrom.py'
+    script: 'scripts/rename_chrom.py'
 
 rule get_chrname:  # Split plink files into chromosomes.
     input: rules.rename_chrom.output.json
@@ -136,13 +136,32 @@ rule get_chrname:  # Split plink files into chromosomes.
         with open(output[0], 'w') as f:
             print(chr_, file=f)
 
-rule split_to_vcf:  # Split plink files into chromosomes.
+rule sort_plink:  # Split plink files into chromosomes.
     input:
         fileset = rules.flippyr.output.plink,
-        bim = rules.rename_chrom.output.json,
-        chrname = rules.get_chrname.output
+        bim = rules.rename_chrom.output.bim
     params:
         ins = '{outdir}/plink/{cohort}_refmatched',
+        out = '{outdir}/rename_chrom/{cohort}_flip-rename-sort'
+    output:
+        temp(multiext('{outdir}/rename_chrom/{cohort}_flip-rename-sort',
+                      '.bed', '.bim', '.fam'))
+    threads: 2
+    resources:
+        mem_mb = 8192,
+        time_min = 30
+    conda: 'envs/plink.yaml'
+    shell: '''
+plink --bfile {params.ins} --bim {input.bim} --real-ref-alleles \
+  --make-bed --out {params.out}
+'''
+
+rule split_to_vcf:  # Split plink files into chromosomes.
+    input:
+        fileset = rules.sort_plink.output,
+        chrname = rules.get_chrname.output
+    params:
+        ins = '{outdir}/rename_chrom/{cohort}_flip-rename-sort',
         out = '{outdir}/{cohort}.chr{chrom}_unsorted'
     output: temp('{outdir}/{cohort}.chr{chrom}_unsorted.vcf.gz')
     threads: 2
@@ -151,9 +170,9 @@ rule split_to_vcf:  # Split plink files into chromosomes.
         time_min = 30
     conda: 'envs/plink.yaml'
     shell: '''
-plink --bfile {params.ins} --bim {input.bim} --chr "$(cat {input.chrname})" \
+plink --bfile {params.ins} --chr "$(cat {input.chrname})" \
   --memory 16000 --real-ref-alleles \
-  --recode vcf bgz --out {{params.out}} --silent
+  --recode vcf bgz --out {params.out} --silent
 '''
 
 rule sort_vcf_precallrate:
@@ -168,6 +187,6 @@ rule sort_vcf_precallrate:
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-bcftools sort --threads {threads} -Oz -o {output.vcf} {input}
+bcftools sort -Oz -o {output.vcf} {input}
 bcftools index -t {output.vcf}
 '''

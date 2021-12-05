@@ -32,17 +32,18 @@ rule sort_vcf_allchr:
     output:
         vcf = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz'),
         tbi = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz.tbi')
-    threads: 8
+    params:
+        tempdir = "{outdir}/temp/{cohort}"
+    threads: 4
     resources:
         mem_mb = 8192,
-        time_min = 120,
-        tempdir = "{outdir}/temp/{cohort}"
+        time_min = 120
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-mkdir -p {resources.tempdir}
+mkdir -p {params.tempdir}
 bcftools sort -Oz -o {output.vcf} \
-  --max-mem 64000M --threads {threads} -T {resources.tempdir} {input}
+  --max-mem 64000M -T {params.tempdir} {input}
 bcftools index -t {output.vcf}
 '''
 

@@ -1,14 +1,7 @@
 '''Snakefile for MIS preparation
    Version 1.0'''
 
-from scripts.parse_config_imputePrep import parser
-
-configfile: 'config/config.yaml'
-shell.executable('/bin/bash')
-
 BPLINK = ['bed', 'bim', 'fam']
-
-CHROM, COHORT, INPATH, keep_command = parser(config)
 
 #localrules: all, var_qc, subj_qc, split_to_vcf
 
@@ -20,12 +13,10 @@ else:
     maf_cmd = ''
 
 rule var_qc:
-    # input: expand(INPATH + '{{cohort}}.{ext}', ext=BPLINK)
-    input: multiext('{cohort}', ".bim", ".bed", ".fam")
+    input: multiext(INPATH + '/{cohort}', ".bim", ".bed", ".fam")
     output: temp(expand('{{outdir}}/plink/{{cohort}}_varqc.{ext}', ext=BPLINK))
     params:
-        # ins = INPATH + '{cohort}',
-        ins = '{cohort}',
+        ins = INPATH + '{cohort}',
         out = '{outdir}/plink/{cohort}_varqc',
         geno = config['qc']['geno'],
         maf = maf_cmd
@@ -48,7 +39,7 @@ rule subj_qc:
         ins = rules.var_qc.params.out,
         out = '{outdir}/plink/{cohort}_indivqc',
         mind = config['qc']['mind'],
-        keep = keep_command
+        keep_remove = keep_remove_command,
     output: temp(expand('{{outdir}}/plink/{{cohort}}_indivqc.{ext}', ext=BPLINK))
     threads: 2
     resources:
@@ -59,7 +50,7 @@ rule subj_qc:
         '''
 plink --keep-allele-order \
   --bfile {params.ins} --memory 8192 \
-  --mind {params.mind} --remove samp.irem {params.keep} \
+  --mind {params.mind} {params.keep_remove} \
   --make-bed --out {params.out} --silent
 '''
 
@@ -109,22 +100,60 @@ flippyr -o {params.out} --outputSuffix {params.suff} --plink \
 
 # Split, sort and compress
 
+rule rename_chrom:
+    input:
+        fasta = config['ref'],
+        bim = '{outdir}/plink/{cohort}_refmatched.bim'
+    output:
+        json = '{outdir}/rename_chrom/{cohort}_mapping.json',
+        bim = '{outdir}/rename_chrom/{cohort}_refmatched_renamed.bim'
+    threads: 1
+    resources:
+        mem_mb = 256,
+        time_min = 10
+    script: '../scripts/rename_chrom.py'
+
+rule get_chrname:  # Split plink files into chromosomes.
+    input: rules.rename_chrom.output.json
+    output: temp('{outdir}/{cohort}_{chrom}.name')
+    threads: 1
+    resources:
+        mem_mb = 128,
+        time_min = 1
+    run:
+        import json
+
+        with open(input[0], 'r') as f:
+            m = json.load(f)
+
+        if int(m['build']) == 37 and wildcards.chrom == 'M':
+            chr_ = 'MT'
+        elif int(m['build']) == 37:
+            chr_ = wildcards.chrom
+        else:
+            chr_ = m[wildcards.chrom]
+
+        with open(output[0], 'w') as f:
+            print(chr_, file=f)
+
 rule split_to_vcf:  # Split plink files into chromosomes.
-    input: rules.flippyr.output.plink
+    input:
+        fileset = rules.flippyr.output.plink,
+        bim = rules.rename_chrom.output.json,
+        chrname = rules.get_chrname.output
     params:
         ins = '{outdir}/plink/{cohort}_refmatched',
-        out = '{outdir}/{cohort}.chr{chrom}_unsorted',
-        c = '{chrom}'
+        out = '{outdir}/{cohort}.chr{chrom}_unsorted'
     output: temp('{outdir}/{cohort}.chr{chrom}_unsorted.vcf.gz')
     threads: 2
     resources:
         mem_mb = 8192,
         time_min = 30
     conda: 'envs/plink.yaml'
-    shell:
-        '''
-plink --bfile {params.ins} --chr {params.c} --memory 16000 --real-ref-alleles \
-  --recode vcf bgz --out {params.out} --silent
+    shell: '''
+plink --bfile {params.ins} --bim {input.bim} --chr "$(cat {input.chrname})" \
+  --memory 16000 --real-ref-alleles \
+  --recode vcf bgz --out {{params.out}} --silent
 '''
 
 rule sort_vcf_precallrate:

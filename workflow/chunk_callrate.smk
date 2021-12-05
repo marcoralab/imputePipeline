@@ -40,7 +40,7 @@ rule sort_vcf_allchr:
     conda: 'envs/bcftools.yaml'
     shell:
         '''
-mkdir -p {params.temp}
+mkdir -p {resources.tempdir}
 bcftools sort -Oz -o {output.vcf} \
   --max-mem 64000M --threads {threads} -T {resources.tempdir} {input}
 bcftools index -t {output.vcf}

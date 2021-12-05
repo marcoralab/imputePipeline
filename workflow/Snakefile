@@ -1,15 +1,74 @@
 '''Snakefile for MIS preparation
    Version 1.0'''
 
-from scripts.parse_config_imputePrep import parser
+import re
+import glob
+import os
 
 configfile: 'config/config.yaml'
 shell.executable('/bin/bash')
 
+# --- Process chromosomes config ---
+
+def parse_chrom(chrs):
+    clist = [x.split(":") for x in chrs.split(",")]
+    parsed = []
+    for chrs in clist:
+        if len(chrs) == 2:
+            chrs = [str(c) for c in range(int(chrs[0]), int(chrs[1]) + 1)]
+        elif len(chrs) != 1:
+            raise ValueError("Invalid chromosome list.")
+        parsed += chrs
+    return parsed
+
+
+if 'chr' in config:
+    raise ValueError(
+        "Outdated CHR sepec in config. Please use chroms: 'from:to,other'")
+elif 'chrom' not in config:
+    CHROM = parse_chrom('1:22')
+else:
+    CHROM = parse_chrom(config['chroms'])
+
+# --- Process input files from config ---
+
+INPATH = os.path.normpath(config['directory'])
+
+if 'COHORT' in config and config['COHORT']:
+    COHORT = config["COHORT"]
+else:
+    # Get list of all .bed files
+    beds = glob.iglob(INPATH + "*.bed")
+    # Sample is every base name for the .bed files in the INPATH directory
+    expression = r"(^.*\/)(.*)(?=\.bed)"
+    COHORT = [re.search(expression, x)[2] for x in beds]
+
+# --- Process keep and remove ---
+
+
+def sampfilt(config):
+    def filtstr(x):
+        if not (x in config and config[x] and config[x] is not None):
+            return None
+        elif os.path.isfile(config[x]):
+            paramstr = 'keep' if x == 'include_samp' else 'remove'
+            return '--{} {}'.format(paramstr, os.path.normpath(config[x]))
+        else:
+            filt = 'inclusion' if x == 'include_samp' else 'exclusion'
+            raise Exception("Invalid {} list: {}.".format(filt, config[x]))
+    x = [filtstr(x) for x in ['include_samp', 'exclude_samp']]
+    x = [i for i in x if i is not None]
+    return ' '.join(x) if x else ''
+
+
+keep_remove_command = sampfilt(config)
+
+# --- Done processing ---
+
 BPLINK = ['bed', 'bim', 'fam']
 OUTDIR = config["out_dir"]
 
-CHROM, COHORT, INPATH, keep_command = parser(config)
+
 
 localrules: all
 
@@ -17,12 +76,12 @@ if config['check_vcf']:
     rule all:
         input:
             expand('{outdir}/log/{cohort}_chr{chrom}.check.log',
-                   cohort=COHORT, chrom=CHROM, outdir = OUTDIR)
+                   cohort=COHORT, chrom=CHROM, outdir=OUTDIR)
 else:
     rule all:
         input:
             expand('{outdir}/final/{cohort}_chr{chrom}.vcf.gz',
-                   cohort=COHORT, chrom=CHROM, outdir = OUTDIR)
+                   cohort=COHORT, chrom=CHROM, outdir=OUTDIR)
 
 include: 'part1.smk'
 

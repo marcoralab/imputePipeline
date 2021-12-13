@@ -112,7 +112,8 @@ for cht in COHORT:
 # --- Done processing ---
 
 BPLINK = ['bed', 'bim', 'fam']
-OUTDIR = config["out_dir"]
+OUTPATH = os.path.normpath(config["out_dir"])
+
 
 def flatten(nested):
     flat = []

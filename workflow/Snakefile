@@ -225,7 +225,7 @@ postImpute_config = {
     'outputs': config['outputs'],
     'chroms': config['chroms'],
     'directory_in': OUTPATH + '/imputed',
-    'directory_out': OUTPATH + '/imputed_processed',
+    'directory_out': OUTPATH + '/imputed/processed',
     'qc': config['postqc'],
     'SAMPLES': COHORT}
 

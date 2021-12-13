@@ -38,10 +38,9 @@ if 'COHORT' in config and config['COHORT']:
     COHORT = config["COHORT"]
 else:
     # Get list of all .bed files
-    beds = glob.iglob(INPATH + "*.bed")
     # Sample is every base name for the .bed files in the INPATH directory
-    expression = r"(^.*\/)(.*)(?=\.bed)"
-    COHORT = [re.search(expression, x)[2] for x in beds]
+    expression = re.compile(r"(^.*\/)(.*)(?=\.bed)")
+    COHORT = [expression.search(x)[2] for x in glob.iglob(INPATH + "/*.bed")]
 
 # --- Process keep and remove ---
 
@@ -63,6 +62,51 @@ def sampfilt(config):
 
 keep_remove_command = sampfilt(config)
 
+# --- Process imputation settings ---
+
+imputation_defaults = {
+    'nih': {
+        'server': 'NIH',
+        'refpanel': 'topmed-r2',
+        'population': 'all'},
+    'michigan': {
+        'server': 'Michigan',
+        'refpanel': 'hrc-r1.1',
+        'population': 'mixed'}}
+
+if 'imputation' in config and 'default' in config['imputation']:
+    default_cfg = config['imputation']['default']
+    if ( 'server' in default_cfg and default_cfg['server'].lower() == 'michigan'
+         or ('refpanel' in default_cfg
+             and default_cfg['refpanel'].lower() == 'hrc-r1.1')):
+        default_imp = imputation_defaults['michigan']
+    elif ('refpanel' in default_cfg and
+          default_cfg['refpanel'].lower() == 'topmed-r2'):
+        default_imp = imputation_defaults['nih']
+    elif ('refpanel' in default_cfg and default_cfg['refpanel']
+          and 'server' in default_cfg and default_cfg['server']
+          and 'population' in default_cfg and default_cfg['population']):
+        default_imp = default_cfg
+    else:
+        raise ValueError('Must specify at least server or panel')
+    default_imp.update(default_cfg)
+else:
+    default_imp = imputation_defaults['nih']
+
+imp_settings = dict()
+server = dict()
+token = dict()
+
+for cht in COHORT:
+    imp_settings[cht] = default_imp.copy()
+    if 'imputation' in config and cht in config['imputation']:
+        imp_settings[cht].update(config['imputation'][cht])
+    if 'token' in imp_settings[cht]:
+        token[cht] = imp_settings[cht].pop('token')
+    else:
+        raise ValueError("Must provide either cohort or default API token.")
+    server[cht] = imp_settings[cht].pop('server')
+
 # --- Done processing ---
 
 BPLINK = ['bed', 'bim', 'fam']
@@ -80,7 +124,7 @@ if config['check_vcf']:
 else:
     rule all:
         input:
-            expand('{outdir}/final/{cohort}_chr{chrom}.vcf.gz',
+            expand('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz',
                    cohort=COHORT, chrom=CHROM, outdir=OUTDIR)
 
 include: 'part1.smk'
@@ -92,7 +136,7 @@ elif config['chunk_callrate']:
 else:
     rule compress_vcf_nocallrate:
         input: rules.split_to_vcf.output
-        output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
+        output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
         threads: 4
         resources:
             mem_mb = 8192,
@@ -109,7 +153,7 @@ rule apply_irem:
         irem = '{outdir}/callrate/{cohort}/chrall.irem',
         vcf = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz',
         tbi = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi'
-    output: '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
+    output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
     threads: 4
     resources:
         mem_mb = 8192,
@@ -121,19 +165,38 @@ bcftools view --threads {threads} -S ^{input.irem} -Oz -o {output} {input.vcf}
 bcftools index -t {output}
 '''
 
-if config['check_vcf']:
-    rule check_vcf:
-        input:
-            fasta = config['ref'],
-            vcf = '{outdir}/final/{cohort}_chr{chrom}.vcf.gz'
-        output:
-            '{outdir}/log/{cohort}_chr{chrom}.check.log'
-        params:
-            py_env = config['checkEnv']
-        log: '{outdir}/log/{cohort}_chr{chrom}'
-        resources:
-            mem_mb = 4096,
-            time_min = 30
-        shell:
-            'source activate {params.py_env}; '
-            'python scripts/checkVCF.py -r {input.fasta} -o {log} {input.vcf}'
+rule submit_imputation:
+    input:
+        vcf = expand('{{outdir}}/ready/{{cohort}}_chr{chrom}.vcf.gz',
+                     chrom=CHROM),
+        contig_build = rules.rename_chrom.output.json
+    output: '{outdir}/imputation/{cohort}_imputation.json'
+    params:
+        server = lambda wc: server[wc['cohort']],
+        token = lambda wc: token[wc['cohort']],
+        imp_settings = lambda wc: imp_settings[wc['cohort']]
+    conda: 'envs/apicall.yaml'
+    script: 'scripts/submit_imputation.py'
+
+rule download_imputation:
+    input: rules.submit_imputation.output
+    output:
+        temp(expand('{{outdir}}/imputed/{{cohort}}/chr_{chrom}.zip',
+             chrom=CHROM))
+    params:
+        outdir = '{outdir}/imputed/{cohort}',
+        token = rules.submit_imputation.params.token
+    conda: 'envs/apicall.yaml'
+    script: 'scripts/download_imputation.py'
+
+rule unzip:
+    input:
+        zip = '{outdir}/imputed/{cohort}/chr_{chrom}.zip',
+        json = rules.submit_imputation.output
+    output:
+        vcf = '{outdir}/imputed/{cohort}/chr{chrom}.dose.vcf.gz',
+        info = '{outdir}/imputed/{cohort}/chr{chrom}.info.gz'
+    params:
+        odir = '{outdir}/imputed/{cohort}',
+    conda: 'workflow/envs/p7z.yaml'
+    shell: '7za e {input} -p$(jq -r .password {input.json}) -o{params.odir}'

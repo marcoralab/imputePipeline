@@ -7,8 +7,8 @@ BPLINK = ['bed', 'bim', 'fam']
 
 # Pre-split QC
 
-if config['qc']['maf']:
-    maf_cmd = '--maf ' + config['qc']['maf']
+if config['preqc']['maf']:
+    maf_cmd = '--maf ' + config['preqc']['maf']
 else:
     maf_cmd = ''
 
@@ -18,7 +18,7 @@ rule var_qc:
     params:
         ins = INPATH + '/{cohort}',
         out = '{outdir}/plink/{cohort}_varqc',
-        geno = config['qc']['geno'],
+        geno = config['preqc']['geno'],
         maf = maf_cmd
     threads: 2
     resources:
@@ -38,7 +38,7 @@ rule subj_qc:
     params:
         ins = rules.var_qc.params.out,
         out = '{outdir}/plink/{cohort}_indivqc',
-        mind = config['qc']['mind'],
+        mind = config['preqc']['mind'],
         keep_remove = keep_remove_command,
     output: temp(expand('{{outdir}}/plink/{{cohort}}_indivqc.{ext}', ext=BPLINK))
     threads: 2
@@ -54,14 +54,14 @@ plink --keep-allele-order \
   --make-bed --out {params.out} --silent
 '''
 
-if config['qc']['hwe']:
+if config['preqc']['hwe']:
     rule hwe_qc:
         input: rules.subj_qc.output
         output: temp(expand('{{outdir}}/plink/{{cohort}}_hwe.{ext}', ext=BPLINK))
         params:
             ins = rules.subj_qc.params.out,
             out = '{outdir}/plink/{cohort}_hwe',
-            hwe = config['qc']['hwe'],
+            hwe = config['preqc']['hwe'],
         threads: 2
         resources:
             mem_mb = 8192,
@@ -78,9 +78,9 @@ plink --keep-allele-order \
 rule flippyr:
     input:
         fasta = config['ref'],
-        plink = rules.hwe_qc.output if config['qc']['hwe'] else rules.subj_qc.output
+        plink = rules.hwe_qc.output if config['preqc']['hwe'] else rules.subj_qc.output
     params:
-        bim = rules.hwe_qc.params.out + '.bim' if config['qc']['hwe'] else rules.subj_qc.params.out + '.bim',
+        bim = rules.hwe_qc.params.out + '.bim' if config['preqc']['hwe'] else rules.subj_qc.params.out + '.bim',
         out = '{outdir}/plink/{cohort}',
         suff = '_refmatched'
     output:

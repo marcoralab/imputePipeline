@@ -112,9 +112,30 @@ for cht in COHORT:
 BPLINK = ['bed', 'bim', 'fam']
 OUTDIR = config["out_dir"]
 
+def flatten(nested):
+    flat = []
+    for el in nested:
+        if not isinstance(el, list):
+            flat.append(el)
+        else:
+            flat += flatten(el)
+    return flat
 
 
-localrules: all
+outs = dict(
+    stat_report="{impute_dir}/stats/{cohort}_impStats.html",
+    vcf_bycohort="{impute_dir}/data/{cohort}_chrall_filtered.vcf.gz",
+    vcf_merged="{impute_dir}/data/all_chrall_filtered.vcf.gz",
+    bgen_bycohort="{impute_dir}/data/{cohort}_chrall_filtered.bgen",
+    bgen_merged="{impute_dir}/data/merged/merged_chrall_filtered.bgen",
+    plink_bycohort="{impute_dir}/data/{cohort}_chrall_filtered.{ext}",
+    plink_merged="{impute_dir}/data/all_chrall_filtered.{ext}")
+
+def expand_outs(out):
+    return expand(out, cohort=COHORT, ext=BPLINK, impute_dir=OUTPATH)
+
+imputed = flatten([expand_outs(outs[x]) for x in config["outputs"]])
+
 
 if config['check_vcf']:
     rule all:
@@ -125,7 +146,8 @@ else:
     rule all:
         input:
             expand('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz',
-                   cohort=COHORT, chrom=CHROM, outdir=OUTDIR)
+                   cohort=COHORT, chrom=CHROM, outdir=OUTDIR),
+            imputed
 
 include: 'part1.smk'
 
@@ -200,3 +222,18 @@ rule unzip:
         odir = '{outdir}/imputed/{cohort}',
     conda: 'workflow/envs/p7z.yaml'
     shell: '7za e {input} -p$(jq -r .password {input.json}) -o{params.odir}'
+
+postImpute_config['outputs'] = config['outputs']
+postImpute_config['chroms'] = config['chroms']
+postImpute_config['directory_in'] = OUTDIR + '/imputed'
+postImpute_config['directory_out'] = OUTDIR + '/imputed_processed'
+postImpute_config['qc'] = config['postqc']
+
+postImpute_config = 'intermediate/pre-impute_ancestry'
+
+# Post Imputation
+module postImpute:
+    snakefile: "modules/postImpute/Snakefile"
+    config: config["postImpute"]
+
+use rule * from postImpute as postImpute_*

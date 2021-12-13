@@ -1,8 +1,12 @@
 # Directory where input plink filesets are.
 # No trailing / is required.
-COHORT: 'test'
-directory: /sc/arion/projects/LOAD/shea/data/ADRC_CFI/plink
-out_dir: "output"
+directory: input
+out_dir: output
+
+imputation:
+  default:
+    token: token_here
+    refpanel: topmed-r2
 
 # Select chromosomes you want to upload
 #  separate ranges with ":" and listed chromosomes with ","
@@ -10,14 +14,23 @@ out_dir: "output"
 # Options are 1:22,X,Y,M
 chroms: '1:22,X'
 
+outputs: # Comment out any line with outputs you don't want
+  - stat_report # A report of imputation quality
+  - vcf_bycohort # Bgzipped VCF files for each cohort
+  # - vcf_merged # A bgzipped VCF with all cohorts
+  # - bgen_bycohort # Binary oxford filesets for each cohort
+  # - bgen_merged # A binary oxford fileset with all cohorts
+  - plink_bycohort # Binary plink filesets for each cohort
+  - plink_merged # A binary plink fileset with all cohorts
+
 # Location of fasta file for flipping and VCFcheck
 # ImputePrep will also rename choromosomes to match fasta sequences for b38
 #  and X/Y/MT compatibility
 ref:
   /sc/arion/projects/LOAD/shea/data/reference_panels/human_g1k_v37.fasta
 
-# Subject and sample level QC thresholds
-qc:
+# Subject and variant level QC thresholds to apply before imputation
+preqc:
   hwe: 0.000001
   #Hardy-Weinberg Equilibrium Cutoff ("false" to skip)
   #MAF Cutoff ("false" to skip)
@@ -26,6 +39,17 @@ qc:
   geno: 0.05
   #Subject level missingness cutoff
   mind: 0.05
+
+# variant level QC thresholds to apply after imputation
+postqc:
+  # MAF Cutoff between common and rare
+  maf: 0.005
+  # Rsq to use with common variants
+  rsq: 0.3
+  # Rsq to use with rare variants (set to NA to use rsq as hard cutoff)
+  rsq2: NA
+  # Number of SNPs of each type (Imputed, Typed) to sample for figures
+  sampsize: 100000
 
 # Sample filtering
 
@@ -43,6 +67,3 @@ exclude_samp:
 # in the second column, and removes all unlisted samples
 # from the current analysis. --remove does the same for
 # all listed samples.
-
-check_vcf: False
-checkEnv: checkVCF

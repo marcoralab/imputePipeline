@@ -36,6 +36,8 @@ INPATH = os.path.normpath(config['directory'])
 
 if 'COHORT' in config and config['COHORT']:
     COHORT = config["COHORT"]
+elif 'SAMPLES' in config and config['SAMPLES']:
+    COHORT = config["SAMPLES"]
 else:
     # Get list of all .bed files
     # Sample is every base name for the .bed files in the INPATH directory

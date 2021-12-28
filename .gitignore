@@ -11,3 +11,6 @@ temp/
 samp.irem
 samp.ikeep
 workflow/scripts/__pycache__/
+logs/
+workflow/modules
+.fuse*

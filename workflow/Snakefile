@@ -141,10 +141,12 @@ def expand_outs(out):
 
 imputed = flatten([expand_outs(imputed_outs[x]) for x in config["outputs"]])
 
+localrules: all, submit_imputation, download_imputation
+
 rule all:
     input:
-        expand('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz',
-               cohort=COHORT, chrom=CHROM, outdir=OUTPATH),
+        #expand('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz',
+        #       cohort=COHORT, chrom=CHROM, outdir=OUTPATH),
         imputed
 
 include: 'part1.smk'
@@ -218,7 +220,7 @@ rule unzip:
         info = '{outdir}/imputed/{cohort}/chr{chrom}.info.gz'
     params:
         odir = '{outdir}/imputed/{cohort}',
-    conda: 'workflow/envs/p7z.yaml'
+    conda: 'envs/p7z.yaml'
     shell: '7za e {input} -p$(jq -r .password {input.json}) -o{params.odir}'
 
 postImpute_config = {

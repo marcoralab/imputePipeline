@@ -1,13 +1,15 @@
-def chunkfiles(wildcards):
+def chunkfiles(wc):
     chrom = [str(x) for x in CHROM]
-    fname = checkpoints.make_chunk_yaml.get(cohort=wildcards.cohort,outdir=wildcards.outdir).output[0]
+    fname = checkpoints.make_chunk_yaml.get(
+        cohort=wc.cohort, outdir=wc.outdir).output[0]
     with fname.open() as chunkfile:
         chunks = json.load(chunkfile)
     chunks_proc = zip(chunks['chrom'], chunks['from'], chunks['through'])
-    files = ['{}/{}/chr{}_from{}_through{}'.format(wildcards.outdir, wildcards.cohort, ch, fr, to)
-             for ch, fr, to in chunks_proc if ch in chrom]
-    outname = '{}/callrate/{}.sample_missingness.imiss'
-    files = [outname.format(wildcards.outdir, x) for x in files]
+    ranges = [f'chr{ch}_from{fr}_through{to}'
+              for ch, fr, to in chunks_proc if ch in chrom]
+    files = [
+        f'{wc.outdir}/callrate/{wc.cohort}/{range}.sample_missingness.imiss'
+        for range in ranges]
     return files
 
 rule all_to_vcf:

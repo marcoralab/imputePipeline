@@ -221,7 +221,7 @@ rule unzip:
     params:
         odir = '{outdir}/imputed/{cohort}',
     conda: 'envs/p7z.yaml'
-    shell: '7za e {input} -p$(jq -r .password {input.json}) -o{params.odir}'
+    shell: '7za e {input.zip} -p$(jq -r .password {input.json}) -o{params.odir}'
 
 postImpute_config = {
     'outputs': config['outputs'],

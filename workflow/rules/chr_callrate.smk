@@ -9,7 +9,7 @@ rule check_chr_callrate:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/bcftools.yaml'
+    conda: '../envs/bcftools.yaml'
     shell: 'vcftools --missing-indv --gzvcf {input.vcf} --out {params.out}'
 
 rule process_chr_callrate:
@@ -24,5 +24,5 @@ rule process_chr_callrate:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/r.yaml'
+    conda: '../envs/r.yaml'
     script: 'scripts/process_imiss.R {params.dir}'

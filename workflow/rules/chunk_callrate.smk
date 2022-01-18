@@ -22,7 +22,7 @@ rule all_to_vcf:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/plink.yaml'
+    conda: '../envs/plink.yaml'
     shell:
         '''
 plink --bfile {params.ins} --memory 4096 --real-ref-alleles \
@@ -40,7 +40,7 @@ rule sort_vcf_allchr:
     resources:
         mem_mb = 8192,
         time_min = 120
-    conda: 'envs/bcftools.yaml'
+    conda: '../envs/bcftools.yaml'
     shell:
         '''
 mkdir -p {params.tempdir}
@@ -58,7 +58,7 @@ checkpoint make_chunk_yaml:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/chunking.yaml'
+    conda: '../envs/chunking.yaml'
     script: 'scripts/fullchunker.py'
 
 rule check_chunk_callrate:
@@ -74,7 +74,7 @@ rule check_chunk_callrate:
     resources:
         mem_mb = 5200,
         time_min = 30
-    conda: 'envs/bcftools.yaml'
+    conda: '../envs/bcftools.yaml'
     shell:
         '''
 vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
@@ -91,5 +91,5 @@ rule process_chunk_callrate:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/r.yaml'
+    conda: '../envs/r.yaml'
     script: 'scripts/process_chunk_imiss.R'

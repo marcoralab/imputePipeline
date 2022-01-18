@@ -24,7 +24,7 @@ rule var_qc:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/plink.yaml'
+    conda: '../envs/plink.yaml'
     shell:
         '''
 plink --keep-allele-order --allow-extra-chr --chr 1-26,X,Y,XY,MT \
@@ -45,7 +45,7 @@ rule subj_qc:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/plink.yaml'
+    conda: '../envs/plink.yaml'
     shell:
         '''
 plink --keep-allele-order \
@@ -66,7 +66,7 @@ if config['preqc']['hwe']:
         resources:
             mem_mb = 8192,
             time_min = 30
-        conda: 'envs/plink.yaml'
+        conda: '../envs/plink.yaml'
         shell:
             '''
 plink --keep-allele-order \
@@ -150,7 +150,7 @@ rule sort_plink:  # Split plink files into chromosomes.
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/plink.yaml'
+    conda: '../envs/plink.yaml'
     shell: '''
 plink --bfile {params.ins} --bim {input.bim} --real-ref-alleles \
   --make-bed --out {params.out}
@@ -168,7 +168,7 @@ rule split_to_vcf:  # Split plink files into chromosomes.
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/plink.yaml'
+    conda: '../envs/plink.yaml'
     shell: '''
 plink --bfile {params.ins} --chr "$(cat {input.chrname})" \
   --memory 16000 --real-ref-alleles \
@@ -184,7 +184,7 @@ rule sort_vcf_precallrate:
     resources:
         mem_mb = 8192,
         time_min = 30
-    conda: 'envs/bcftools.yaml'
+    conda: '../envs/bcftools.yaml'
     shell:
         '''
 bcftools sort -Oz -o {output.vcf} {input}

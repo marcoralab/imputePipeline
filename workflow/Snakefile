@@ -152,12 +152,12 @@ rule all:
         #       cohort=COHORT, chrom=CHROM, outdir=OUTPATH),
         imputed
 
-include: 'part1.smk'
+include: 'rules/part1.smk'
 
 if config['chr_callrate']:
-    include: 'chr_callrate.smk'
+    include: 'rules/chr_callrate.smk'
 elif config['chunk_callrate']:
-    include: 'chunk_callrate.smk'
+    include: 'rules/chunk_callrate.smk'
 else:
     rule compress_vcf_nocallrate:
         input: rules.split_to_vcf.output

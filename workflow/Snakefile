@@ -141,6 +141,9 @@ def expand_outs(out):
 
 imputed = flatten([expand_outs(imputed_outs[x]) for x in config["outputs"]])
 
+wildcard_constraints:
+    cohort = r'[^/]+'
+
 localrules: all, submit_imputation, download_imputation
 
 rule all:
@@ -206,7 +209,7 @@ rule download_imputation:
         temp(expand('{{outdir}}/imputed/{{cohort}}/chr_{chrom}.zip',
              chrom=CHROM))
     params:
-        outdir = '{outdir}/imputed/{cohort}',
+        outpath = '{outdir}/imputed/{cohort}',
         token = rules.submit_imputation.params.token
     conda: 'envs/apicall.yaml'
     script: 'scripts/download_imputation.py'
@@ -221,6 +224,10 @@ rule unzip:
     params:
         odir = '{outdir}/imputed/{cohort}',
     conda: 'envs/p7z.yaml'
+    threads: 1
+    resources:
+        mem_mb = 8192,
+        time_min = 30
     shell: '7za e {input.zip} -p$(jq -r .password {input.json}) -o{params.odir}'
 
 postImpute_config = {

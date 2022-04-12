@@ -1,6 +1,6 @@
-# imputePrep
+# imputePipeline
 
-A Snakemake pipeline to prepare binary PLINK files for the Michigan Imputation Server.
+A Snakemake pipeline to prepare, impute and process binary PLINK files on the Michigan/TOPMed Imputation Servers.
 
 ## Requirements:
 
@@ -63,7 +63,7 @@ The hash of settings follows the API specifications [here](https://imputationser
 
 Options for `server` are `NIH` or `Michigan`. Case does not matter.
 
-For each cohort specified, the pipeline will override the defaults, with the specified settings. If those are unchanged from the default, they do not need to be edited. 
+For each cohort specified, the pipeline will override the defaults, with the specified settings. If those are unchanged from the default, they do not need to be edited.
 
 Here is an example:
 
@@ -119,5 +119,3 @@ snakemake --use-conda --use-singularity
 ```
 
 Make sure your cluster supports the amount of memory required for report generation (528 GiB) and that the memory is being properly requested. If that is not the case, you can edit the resource requirements on the rule `stats` in the [postImpute](https://github.com/marcoralab/postImpute) pipeline and modify the modularization lines in `workflow/Snakefile` in this pipeline. We have included a `lsf.yaml` file that ensures those resources are available within this pipeline.
-
-

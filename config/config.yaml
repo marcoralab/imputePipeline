@@ -1,6 +1,6 @@
 # Directory where input plink filesets are.
 # No trailing / is required.
-directory: input
+directory: .
 out_dir: output
 
 imputation:

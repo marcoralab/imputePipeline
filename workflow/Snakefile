@@ -6,6 +6,7 @@ import glob
 import os
 
 configfile: 'config/config.yaml'
+
 shell.executable('/bin/bash')
 
 # --- Process chromosomes config ---
@@ -25,7 +26,7 @@ def parse_chrom(chrs):
 if 'chr' in config:
     raise ValueError(
         "Outdated CHR sepec in config. Please use chroms: 'from:to,other'")
-elif 'chrom' not in config:
+elif 'chroms' not in config:
     CHROM = parse_chrom('1:22')
 else:
     CHROM = parse_chrom(config['chroms'])

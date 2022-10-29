@@ -1,5 +1,5 @@
 channels:
-    - bioconda
     - conda-forge
+    - bioconda
 dependencies:
     - plink=1.90b6.21

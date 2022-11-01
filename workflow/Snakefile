@@ -237,11 +237,12 @@ postImpute_config = {
     'directory_in': OUTPATH + '/imputed',
     'directory_out': OUTPATH + '/imputed/processed',
     'qc': config['postqc'],
-    'SAMPLES': COHORT}
+    'SAMPLES': COHORT,
+    'validate_inputs': False}
 
 # Post Imputation
 module postImpute:
-    snakefile: github("marcoralab/postImpute", path="workflow/Snakefile", tag="v0.4.4")
+    snakefile: github("marcoralab/postImpute", path="workflow/Snakefile", tag="v0.4.7")
     config: postImpute_config
 
 use rule * from postImpute as postImpute_*

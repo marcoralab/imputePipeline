@@ -111,7 +111,8 @@ rule rename_chrom:
     resources:
         mem_mb = 256,
         time_min = 10
-    script: 'scripts/rename_chrom.py'
+    container: 'docker://befh/flippyr:0.5.3'
+    script: '../scripts/rename_chrom.py'
 
 rule get_chrname:  # Split plink files into chromosomes.
     input: rules.rename_chrom.output.json

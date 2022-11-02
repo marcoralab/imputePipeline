@@ -25,4 +25,4 @@ rule process_chr_callrate:
         mem_mb = 8192,
         time_min = 30
     conda: '../envs/r.yaml'
-    script: 'scripts/process_imiss.R {params.dir}'
+    script: '../scripts/process_imiss.R {params.dir}'

@@ -59,7 +59,7 @@ checkpoint make_chunk_yaml:
         mem_mb = 8192,
         time_min = 30
     conda: '../envs/chunking.yaml'
-    script: 'scripts/fullchunker.py'
+    script: '../scripts/fullchunker.py'
 
 rule check_chunk_callrate:
     input:
@@ -92,4 +92,4 @@ rule process_chunk_callrate:
         mem_mb = 8192,
         time_min = 30
     conda: '../envs/r.yaml'
-    script: 'scripts/process_chunk_imiss.R'
+    script: '../scripts/process_chunk_imiss.R'

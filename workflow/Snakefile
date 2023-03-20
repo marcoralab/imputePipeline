@@ -240,9 +240,10 @@ postImpute_config = {
     'SAMPLES': COHORT,
     'validate_inputs': False}
 
+
 # Post Imputation
 module postImpute:
-    snakefile: github("marcoralab/postImpute", path="workflow/Snakefile", tag="v0.4.7")
+    snakefile: github("marcoralab/postImpute", path="workflow/Snakefile", tag="v0.4.10")
     config: postImpute_config
 
 use rule * from postImpute as postImpute_*

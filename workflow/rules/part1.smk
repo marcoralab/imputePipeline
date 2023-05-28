@@ -180,7 +180,7 @@ rule sort_vcf_precallrate:
     input: rules.split_to_vcf.output
     output:
         vcf = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz'),
-        tbi = temp('{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi')
+        tbi = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz.tbi')
     threads: 4
     resources:
         mem_mb = 8192,

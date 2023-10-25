@@ -38,7 +38,7 @@ rule sort_vcf_allchr:
         tempdir = "{outdir}/temp/{cohort}"
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 120
     conda: '../envs/bcftools.yaml'
     shell:

@@ -1,5 +1,7 @@
-'''Snakefile for MIS preparation
-   Version 1.0'''
+'''Snakefile for MIS preparation'''
+
+from snakemake.utils import min_version
+min_version("7.25.0")
 
 import re
 import glob
@@ -146,13 +148,12 @@ imputed = flatten([expand_outs(imputed_outs[x]) for x in config["outputs"]])
 wildcard_constraints:
     cohort = r'[^/]+'
 
-localrules: all, submit_imputation, download_imputation
-
 rule all:
     input:
         #expand('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz',
         #       cohort=COHORT, chrom=CHROM, outdir=OUTPATH),
         imputed
+    localrule: True
 
 include: 'rules/part1.smk'
 
@@ -203,6 +204,7 @@ rule submit_imputation:
         token = lambda wc: token[wc['cohort']],
         imp_settings = lambda wc: imp_settings[wc['cohort']]
     conda: 'envs/apicall.yaml'
+    localrule: True
     script: 'scripts/submit_imputation.py'
 
 rule download_imputation:
@@ -214,6 +216,7 @@ rule download_imputation:
         outpath = '{outdir}/imputed/{cohort}',
         token = rules.submit_imputation.params.token
     conda: 'envs/apicall.yaml'
+    localrule: True
     script: 'scripts/download_imputation.py'
 
 rule unzip:

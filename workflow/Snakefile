@@ -146,7 +146,8 @@ def expand_outs(out):
 imputed = flatten([expand_outs(imputed_outs[x]) for x in config["outputs"]])
 
 wildcard_constraints:
-    cohort = r'[^/]+'
+    cohort = r'[^/]+',
+    chrom = = '|'.join([str(x) for x in CHROM])
 
 rule all:
     input:

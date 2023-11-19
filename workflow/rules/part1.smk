@@ -132,7 +132,7 @@ rule get_chrname:  # Split plink files into chromosomes.
         elif int(m['build']) == 37:
             chr_ = wildcards.chrom
         else:
-            chr_ = m[wildcards.chrom]
+            chr_ = m['map'][wildcards.chrom]
 
         with open(output[0], 'w') as f:
             print(chr_, file=f)

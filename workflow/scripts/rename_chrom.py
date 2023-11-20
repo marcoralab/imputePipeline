@@ -2,8 +2,7 @@ from pyfaidx import Fasta
 import json
 
 fasta = snakemake.input['fasta']
-bim_in = snakemake.input['bim']
-bim_out = snakemake.output['bim']
+mapping_out = snakemake.output['mapping']
 json_out = snakemake.output['json']
 
 seqs = Fasta(fasta).keys()
@@ -27,10 +26,6 @@ mapping.update(mapping_chr)
 with open(json_out, "w") as f:
     json.dump(json_, f)
 
-with open(bim_in, 'r') as f_in:
-    with open(bim_out, 'w') as f_out:
-        for line in f_in:
-            rec = line.strip().split()
-            update = mapping[rec[0]] if rec[0] in mapping else rec[0]
-            updated = '\t'.join([update] + rec[1:])
-            print(updated, file=f_out)
+with open(mapping_out, 'w') as f_out:
+    for k, v in mapping.items():
+        print(f'{k} {v}', file=f_out)

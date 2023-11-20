@@ -106,7 +106,7 @@ rule rename_chrom:
         bim = '{outdir}/plink/{cohort}_refmatched.bim'
     output:
         json = '{outdir}/rename_chrom/{cohort}_mapping.json',
-        bim = '{outdir}/rename_chrom/{cohort}_refmatched_renamed.bim'
+        mapping = '{outdir}/rename_chrom/{cohort}_mapping.txt'
     threads: 1
     resources:
         mem_mb = 256,
@@ -114,56 +114,25 @@ rule rename_chrom:
     container: 'docker://befh/flippyr:0.5.3'
     script: '../scripts/rename_chrom.py'
 
-rule get_chrname:  # Split plink files into chromosomes.
-    input: rules.rename_chrom.output.json
-    output: temp('{outdir}/{cohort}_{chrom}.name')
-    threads: 1
-    resources:
-        mem_mb = 128,
-        time_min = 1
-    run:
-        import json
-
-        with open(input[0], 'r') as f:
-            m = json.load(f)
-
-        if int(m['build']) == 37 and wildcards.chrom == 'M':
-            chr_ = 'MT'
-        elif int(m['build']) == 37:
-            chr_ = wildcards.chrom
-        else:
-            chr_ = m['map'][wildcards.chrom]
-
-        with open(output[0], 'w') as f:
-            print(chr_, file=f)
-
-rule sort_plink:  # Split plink files into chromosomes.
-    input:
-        fileset = rules.flippyr.output.plink,
-        bim = rules.rename_chrom.output.bim
-    params:
-        ins = '{outdir}/plink/{cohort}_refmatched',
-        out = '{outdir}/rename_chrom/{cohort}_flip-rename-sort'
-    output:
-        temp(multiext('{outdir}/rename_chrom/{cohort}_flip-rename-sort',
-                      '.bed', '.bim', '.fam'))
-    threads: 2
-    resources:
-        mem_mb = 8192,
-        time_min = 30
-    conda: '../envs/plink.yaml'
-    shell: '''
-plink --bfile {params.ins} --bim {input.bim} --real-ref-alleles \
-  --make-bed --out {params.out}
-'''
+def get_chrname(wc):
+    if wc['chrom'] in [str(x) for x in range(1, 23)]:
+        return wc['chrom']
+    if wc['chrom'] == 'X':
+        return 'X,XY'
+    if wc['chrom'] == 'Y':
+        return 'Y'
+    if wc['chrom'] == 'M':
+        return 'MT'
+    raise Exception('Bad chromosome')
 
 rule split_to_vcf:  # Split plink files into chromosomes.
     input:
-        fileset = rules.sort_plink.output,
+        fileset = rules.flippyr.output.plink,
         chrname = rules.get_chrname.output
     params:
-        ins = '{outdir}/rename_chrom/{cohort}_flip-rename-sort',
-        out = '{outdir}/{cohort}.chr{chrom}_unsorted'
+        ins = '{outdir}/plink/{cohort}_refmatched',
+        out = '{outdir}/{cohort}.chr{chrom}_unsorted',
+        chr = get_chrname
     output: temp('{outdir}/{cohort}.chr{chrom}_unsorted.vcf.gz')
     threads: 2
     resources:
@@ -171,16 +140,18 @@ rule split_to_vcf:  # Split plink files into chromosomes.
         time_min = 30
     conda: '../envs/plink.yaml'
     shell: '''
-plink --bfile {params.ins} --chr "$(cat {input.chrname})" \
+plink --bfile {params.ins} --chr {params.chr} \
   --memory 16000 --real-ref-alleles \
   --recode vcf bgz --out {params.out} --silent
 '''
 
 rule sort_vcf_precallrate:
-    input: rules.split_to_vcf.output
+    input:
+        vcf = rules.split_to_vcf.output,
+        rename = rules.rename_chrom.output.mapping
     output:
-        vcf = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz'),
-        tbi = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|MT}_preCallcheck.vcf.gz.tbi')
+        vcf = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz'),
+        tbi = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz.tbi')
     threads: 4
     resources:
         mem_mb = 8192,
@@ -188,6 +159,7 @@ rule sort_vcf_precallrate:
     conda: '../envs/bcftools.yaml'
     shell:
         '''
-bcftools sort -Oz -o {output.vcf} {input}
+bcftools sort {input.vcf} | \
+  bcftools annotate --rename-chrs {input.rename} -Oz -o {output.vcf} 
 bcftools index -t {output.vcf}
 '''

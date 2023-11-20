@@ -73,7 +73,7 @@ rule check_chunk_callrate:
     threads: 1
     resources:
         mem_mb = 5200,
-        time_min = 30
+        time_min = 300
     conda: '../envs/bcftools.yaml'
     shell:
         '''

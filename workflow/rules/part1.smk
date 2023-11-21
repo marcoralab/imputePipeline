@@ -126,9 +126,7 @@ def get_chrname(wc):
     raise Exception('Bad chromosome')
 
 rule split_to_vcf:  # Split plink files into chromosomes.
-    input:
-        fileset = rules.flippyr.output.plink,
-        chrname = rules.get_chrname.output
+    input: rules.flippyr.output.plink
     params:
         ins = '{outdir}/plink/{cohort}_refmatched',
         out = '{outdir}/{cohort}.chr{chrom}_unsorted',

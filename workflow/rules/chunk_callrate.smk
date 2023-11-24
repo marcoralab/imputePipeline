@@ -21,7 +21,7 @@ rule all_to_vcf:
     threads: 4
     resources:
         mem_mb = 8192,
-        time_min = 30
+        time_min = 120
     conda: '../envs/plink.yaml'
     shell:
         '''
@@ -39,7 +39,7 @@ rule sort_vcf_allchr:
     threads: 4
     resources:
         mem_mb = 16384,
-        time_min = 120
+        time_min = 480
     conda: '../envs/bcftools.yaml'
     shell:
         '''
@@ -57,7 +57,7 @@ checkpoint make_chunk_yaml:
     threads: 4
     resources:
         mem_mb = 8192,
-        time_min = 30
+        time_min = 60
     conda: '../envs/chunking.yaml'
     script: '../scripts/fullchunker.py'
 
@@ -73,7 +73,7 @@ rule check_chunk_callrate:
     threads: 1
     resources:
         mem_mb = 5200,
-        time_min = 300
+        time_min = 600
     conda: '../envs/bcftools.yaml'
     shell:
         '''
@@ -90,6 +90,6 @@ rule process_chunk_callrate:
     threads: 4
     resources:
         mem_mb = 8192,
-        time_min = 30
+        time_min = 60
     conda: '../envs/r.yaml'
     script: '../scripts/process_chunk_imiss.R'

@@ -251,9 +251,9 @@ if 'version_postImpute' in config:
 else:
   version_postImpute = 'v0.4.10'
 
-if re.match(r'/', version_postImpute):
+if re.search(r'/', version_postImpute):
   snakefile_postImpute = os.path.join(
-    os.path.normpath(version_postImpute), 'workflow', 'Snakefile')
+    os.path.abspath(version_postImpute), 'workflow', 'Snakefile')
 else:
   snakefile_postImpute = github("marcoralab/postImpute", path="workflow/Snakefile", tag=version_postImpute)
 

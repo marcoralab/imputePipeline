@@ -6,7 +6,7 @@ out_dir: output
 imputation:
   default:
     token: token_here
-    refpanel: topmed-r2
+    refpanel: topmed-r3
 
 # Select chromosomes you want to upload
 #  separate ranges with ":" and listed chromosomes with ","

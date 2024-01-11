@@ -73,7 +73,7 @@ keep_remove_command = sampfilt(config)
 imputation_defaults = {
     'nih': {
         'server': 'NIH',
-        'refpanel': 'topmed-r2',
+        'refpanel': 'topmed-r3',
         'population': 'all'},
     'michigan': {
         'server': 'Michigan',
@@ -87,7 +87,7 @@ if 'imputation' in config and 'default' in config['imputation']:
              and default_cfg['refpanel'].lower() == 'hrc-r1.1')):
         default_imp = imputation_defaults['michigan']
     elif ('refpanel' in default_cfg and
-          default_cfg['refpanel'].lower() == 'topmed-r2'):
+          default_cfg['refpanel'].lower() == 'topmed-r3'):
         default_imp = imputation_defaults['nih']
     elif ('refpanel' in default_cfg and default_cfg['refpanel']
           and 'server' in default_cfg and default_cfg['server']

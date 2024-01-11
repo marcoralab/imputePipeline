@@ -71,7 +71,7 @@ Here is an example:
 imputation:
   default:
     token: token_here
-    refpanel: topmed-r2
+    refpanel: topmed-r3
   study2:
     token: other_token_here
     server: Michigan

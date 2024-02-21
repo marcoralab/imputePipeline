@@ -246,6 +246,16 @@ postImpute_config = {
     'validate_inputs': False,
     'imputePipeline': True}
 
+## --- redo if integrating sample duplication --- ##
+
+if 'include_samp_post' in config:
+    postImpute_config['include_samp'] = config['include_samp_post']
+
+if 'exclude_samp_post' in config:
+    postImpute_config['exclude_samp'] = config['exclude_samp_post']
+
+### --- ###
+
 if 'version_postImpute' in config:
   version_postImpute = config['version_postImpute']
 else:

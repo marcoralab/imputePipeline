@@ -105,7 +105,6 @@ flippyr -o {params.out} --outputSuffix {params.suff} --plink \
 rule rename_chrom:
     input:
         fasta = config['ref'],
-        bim = '{outdir}/plink/{cohort}_refmatched.bim'
     output:
         json = '{outdir}/rename_chrom/{cohort}_mapping.json',
         mapping = '{outdir}/rename_chrom/{cohort}_mapping.txt'

@@ -282,10 +282,10 @@ elif config['chunk_callrate']:
 else:
     rule copy_vcf_nocallrate:
         input: 
-            tbi = rules.sort_vcf_precallrate.output.tbi
+            tbi = rules.sort_vcf_precallrate.output.tbi,
             vcf = rules.sort_vcf_precallrate.output.vcf
         output:
-            tbi = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz.tbi'
+            tbi = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz.tbi',
             vcf = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
         localrule: True
         shell:

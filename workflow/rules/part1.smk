@@ -171,7 +171,7 @@ rule invcf_split:
     input:
         vcf = lambda wc: infiles[wc['cohort']]['file'],
         sampfilt = select_sampfilt_files(config)
-    output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_varqc.vcf.gz')
+    output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_split.vcf.gz')
     params:
         chrom = get_chrom,
         sf = sampfilt
@@ -189,7 +189,7 @@ rule invcf_sampfilt:
     input:
         vcf = lambda wc: infiles[wc['cohort']]['file'],
         sampfilt = select_sampfilt_files(config)
-    output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_varqc.vcf.gz')
+    output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_sampfilt.vcf.gz')
     params:
         sf = sampfilt
     threads: 2

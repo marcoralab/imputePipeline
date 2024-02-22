@@ -19,8 +19,8 @@ rule cat_chroms:
         vcf = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz', chrom=CHROM),
         tbi = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz.tbi', chrom=CHROM)
     output:
-        vcf = rules.sort_vcf_precallrate.output.vcf,
-        tbi = rules.sort_vcf_precallrate.output.tbi
+        vcf = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz',
+        tbi = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz.tbi'
     threads: 1
     resources:
         mem_mb = 5200,

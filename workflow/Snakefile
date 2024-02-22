@@ -280,19 +280,19 @@ if config['chr_callrate']:
 elif config['chunk_callrate']:
     include: 'rules/chunk_callrate.smk'
 else:
-    rule compress_vcf_nocallrate:
-        input: rules.split_to_vcf.output
-        output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
-        threads: 4
-        resources:
-            mem_mb = 8192,
-            time_min = 30
-        conda: 'envs/bcftools.yaml'
+    rule copy_vcf_nocallrate:
+        input: 
+            tbi = rules.sort_vcf_precallrate.output.tbi
+            vcf = rules.sort_vcf_precallrate.output.vcf
+        output:
+            tbi = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz.tbi'
+            vcf = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
+        localrule: True
         shell:
             '''
-    bcftools sort --threads {threads} -Oz -o {output} {input}
-    bcftools index -t {output}
-    '''
+cp {input.vcf} {output.vcf}
+cp {input.tbi} {output.tbi}
+'''
 
 rule apply_irem:
     input:

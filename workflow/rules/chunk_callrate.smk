@@ -12,43 +12,6 @@ def chunkfiles(wc):
         for range in ranges]
     return files
 
-rule all_to_vcf:
-    input: rules.flippyr.output.plink
-    params:
-        ins = '{outdir}/plink/{cohort}_refmatched',
-        out = '{outdir}/{cohort}_chrall_unsorted',
-    output: temp('{outdir}/{cohort}_chrall_unsorted.vcf.gz')
-    threads: 4
-    resources:
-        mem_mb = 8192,
-        time_min = 120
-    conda: '../envs/plink.yaml'
-    shell:
-        '''
-plink --bfile {params.ins} --memory 4096 --real-ref-alleles \
-  --recode vcf bgz --out {params.out}
-'''
-
-rule sort_vcf_allchr:
-    input: rules.all_to_vcf.output
-    output:
-        vcf = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz'),
-        tbi = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz.tbi')
-    params:
-        tempdir = "{outdir}/temp/{cohort}"
-    threads: 4
-    resources:
-        mem_mb = 16384,
-        time_min = 480
-    conda: '../envs/bcftools.yaml'
-    shell:
-        '''
-mkdir -p {params.tempdir}
-bcftools sort -Oz -o {output.vcf} \
-  --max-mem 64000M -T {params.tempdir} {input}
-bcftools index -t {output.vcf}
-'''
-
 checkpoint make_chunk_yaml:
     input:
         vcf = rules.sort_vcf_allchr.output.vcf,
@@ -63,8 +26,8 @@ checkpoint make_chunk_yaml:
 
 rule check_chunk_callrate:
     input:
-        vcf = rules.sort_vcf_allchr.output.vcf,
-        tbi = rules.sort_vcf_allchr.output.tbi
+        vcf = rules.sort_vcf_precallrate.output.vcf,
+        tbi = rules.sort_vcf_precallrate.output.tbi
     output:
         '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
@@ -79,7 +42,7 @@ rule check_chunk_callrate:
         '''
 vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
 '''
-# import ipdb; ipdb.set_trace()
+
 rule process_chunk_callrate:
     input: chunkfiles
     output: '{outdir}/callrate/{cohort}/chrall.irem'

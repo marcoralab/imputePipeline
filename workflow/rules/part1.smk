@@ -276,7 +276,7 @@ bcftools view --samples-file {input.ikeep} -Oz --threads 2 -o {output}
 if do_hwe:
     rule filter_hwe_vcf:
         input: rules.apply_sampmiss_vcf.output
-        output: temp('{outdir}/prep/{cohort}_chr{chrom,[0-9XY]+|M}_varqc.vcf.gz')
+        output: temp('{outdir}/prep/{cohort}_chr{chrom,[0-9XY]+|M}_hweqc.vcf.gz')
         params:
             hwe = config['preqc']['hwe']
         threads: 3
@@ -298,8 +298,7 @@ def input_sort_vcf_precallrate(wc):
         return rules.apply_sampmiss_vcf.output
 
 rule sort_vcf_precallrate:
-    input:
-        vcf = rules.rename_vcf_fromplink.output
+    input: input_sort_vcf_precallrate
     output:
         vcf = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz'),
         tbi = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz.tbi')

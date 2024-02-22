@@ -166,7 +166,7 @@ elif intypes_vcf:
             paramstr = '^' + os.path.normpath(exclude_samp)
         return f' --samples-file {paramstr} --force-samples'
     
-    def select_sampfilt_file(config):
+    def select_sampfilt_files(config):
         include_samp = val_if_config('include_samp', '')
         exclude_samp = val_if_config('exclude_samp', '')
         if not include_samp and not exclude_samp:

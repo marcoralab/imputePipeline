@@ -12,10 +12,29 @@ def chunkfiles(wc):
         for range in ranges]
     return files
 
+### This is slow and inefficient. Better to make chunks per chromosome then merge the json files
+
+rule cat_chroms:
+    input:
+        vcf = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz', chrom=CHROM),
+        tbi = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz.tbi', chrom=CHROM)
+    output:
+        vcf = rules.sort_vcf_precallrate.output.vcf,
+        tbi = rules.sort_vcf_precallrate.output.tbi
+    threads: 1
+    resources:
+        mem_mb = 5200,
+        time_min = 600
+    conda: '../envs/bcftools.yaml'
+    shell: '''
+bcftools concat {input.vcf} -Oz -o {output.vcf}
+bcftools index -tf {output.vcf}
+'''
+
 checkpoint make_chunk_yaml:
     input:
-        vcf = rules.sort_vcf_allchr.output.vcf,
-        tbi = rules.sort_vcf_allchr.output.tbi
+        vcf = rules.cat_chroms.output.vcf,
+        tbi = rules.cat_chroms.output.tbi
     output: '{outdir}/callrate/{cohort}.chunks.json'
     threads: 4
     resources:

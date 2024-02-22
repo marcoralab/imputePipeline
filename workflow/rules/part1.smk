@@ -16,7 +16,7 @@ rule var_qc:
     input: lambda wc: multiext(infiles[wc['cohort']]['fstem'], ".bim", ".bed", ".fam")
     output: temp(expand('{{outdir}}/plink/{{cohort}}_varqc.{ext}', ext=BPLINK))
     params:
-        ins = wc: infiles[wc['cohort']]['fstem'],
+        ins = lambda wc: infiles[wc['cohort']]['fstem'],
         out = '{outdir}/plink/{cohort}_varqc',
         geno = config['preqc']['geno'],
         maf = maf_cmd
@@ -39,7 +39,7 @@ rule subj_qc:
         ins = rules.var_qc.params.out,
         out = '{outdir}/plink/{cohort}_indivqc',
         mind = config['preqc']['mind'],
-        keep_remove = keep_remove_command,
+        keep_remove = sampfilt,
     output: temp(expand('{{outdir}}/plink/{{cohort}}_indivqc.{ext}', ext=BPLINK))
     threads: 2
     resources:
@@ -169,7 +169,7 @@ def get_chrom(wc):
 
 rule invcf_split:
     input:
-        vcf = infiles[wc['cohort']]['file'],
+        vcf = lambda wc: infiles[wc['cohort']]['file'],
         sampfilt = select_sampfilt_files(config)
     output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_varqc.vcf.gz')
     params:
@@ -187,7 +187,7 @@ bcftools view{sf} -Oz --threads 2 --targets-file {params.chrom} -o {output}
 
 rule invcf_sampfilt:
     input:
-        vcf = infiles[wc['cohort']]['file'],
+        vcf = lambda wc: infiles[wc['cohort']]['file'],
         sampfilt = select_sampfilt_files(config)
     output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_varqc.vcf.gz')
     params:
@@ -294,7 +294,7 @@ def input_sort_vcf_precallrate(wc):
         return rules.rename_vcf_fromplink.output
     elif do_hwe:
         return rules.filter_hwe_vcf.output
-    else
+    else:
         return rules.apply_sampmiss_vcf.output
 
 rule sort_vcf_precallrate:

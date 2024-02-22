@@ -57,11 +57,11 @@ else:
 
     SAMPLES = {}
     SAMPLES_plink = [expression_plink.search(x)
-                     for x in glob.iglob(INPATH + "/*.bed")]
+                     for x in glob.iglob(INPATH + "/*.bed")] 
     SAMPLES.update(
-        k: {x[3]: {'type': 'plink',
-                   'fstem': os.path.join(x[1], x[3])}
-        for k, v in SAMPLES_plink})
+        {x[3]: {'type': 'plink',
+                'fstem': os.path.join(x[1], x[3])}
+        for x in SAMPLES_plink})
     vcfs = glob.glob(INPATH + "/*.vcf.gz") + glob.glob(INPATH + "/*.vcf") + glob.glob(INPATH + "/*.bcf")
     SAMPLES_vcfs_all = [
       expression_vcf.search(x) for x in vcfs
@@ -69,13 +69,13 @@ else:
     SAMPLES_vcfs_chr = {expression_vcfchr.search(x) for x in vcf
                 if re.match(r'.+\.chr[0-9XYM]{1,2}\..+', x)}
     SAMPLES.update(
-        k: {x[3]: {'type': 'vcf',
-                   'file': os.path.normpath(x[0])}
-        for k, v in SAMPLES_vcfs_all})
+        {x[3]: {'type': 'vcf',
+                'file': os.path.normpath(x[0])}
+        for x in SAMPLES_vcfs_all})
     SAMPLES.update(
-        k: {x[3]: {'type': 'vcf_chr',
-                   'file': os.path.join(x[1], f'{x[3]}.chr{{chrom}}.{x[4]}')}
-        for k, v in SAMPLES_vcfs_chr})
+        {x[3]: {'type': 'vcf_chr',
+                'file': os.path.join(x[1], f'{x[3]}.chr{{chrom}}.{x[4]}')}
+        for x in SAMPLES_vcfs_chr})
 
 def first_match(pattern, strings):
     pat = re.compile(pattern)
@@ -101,8 +101,14 @@ else:
             f'({INPATH}/{sample})\\.(bcf$|vcf\\.gz$|vcf|bed)',
             files)
         if not m:
+            if 'classic' in config and config['classic']:
+                infiles[sample] = {
+                    'type': 'plink',
+                    'fstem': os.path.normpath(f'{INPATH}/{sample}')
+                }
+                continue
             # Split chrom files not supported for SAMPLE list
-            raise Exception(f'Imput file not found for {sample}')
+            raise Exception(f'Input file not found for {sample}')
         if m[2] == 'bed':
             infiles[sample] = {
                 'type': 'plink',
@@ -176,7 +182,7 @@ elif intypes_vcf:
 
 else:
     sampfilt = False
-    if val_if_config('include_samp') or val_if_config('exclude_samp')
+    if val_if_config('include_samp') or val_if_config('exclude_samp'):
         raise Exception("No filtering in mixed VCF/PLINK input")
 
 # --- Process imputation settings ---
@@ -385,8 +391,8 @@ module postImpute:
 
 use rule * from postImpute as postImpute_*
 
-plink_cohort_fams = [f"{x['fstem'].fam}" for x in infiles.values() if x['type'] == 'plink']
-if fix_fam in config and re.match(r'.+\.fam$', config['fix_fam']):
+plink_cohort_fams = [f"{x['fstem']}.fam" for x in infiles.values() if x['type'] == 'plink']
+if 'fix_fam' in config and re.match(r'.+\.fam$', config['fix_fam']):
     plink_cohort_fams.insert(0, config['fix_fam'])
 
 rule cat_fams:

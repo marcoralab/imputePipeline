@@ -149,7 +149,7 @@ rule rename_vcf_fromplink:
     input:
         vcf = rules.split_to_vcf.output,
         rename = rules.rename_chrom.output.mapping
-    output: temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz')
+    output: temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_unsorted_renamed.vcf.gz')
     threads: 2
     resources:
         mem_mb = 8192,

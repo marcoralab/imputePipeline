@@ -4,7 +4,8 @@ def chunkfiles(wc):
         cohort=wc.cohort, outdir=wc.outdir).output[0]
     with fname.open() as chunkfile:
         chunks = json.load(chunkfile)
-    chunks_proc = zip(chunks['chrom'], chunks['from'], chunks['through'])
+    chunks_proc = zip([re.sub("chr", "", x) for x in chunks['chrom']],
+                      chunks['from'], chunks['through'])
     ranges = [f'chr{ch}_from{fr}_through{to}'
               for ch, fr, to in chunks_proc if ch in chrom]
     files = [
@@ -30,6 +31,8 @@ rule cat_chroms:
 bcftools concat {input.vcf} -Oz -o {output.vcf}
 bcftools index -tf {output.vcf}
 '''
+
+#TODO rewrite to do per chromosome 
 
 checkpoint make_chunk_yaml:
     input:

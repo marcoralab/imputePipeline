@@ -228,8 +228,9 @@ bcftools +fill-tags {input} -- -t MAF,HWE,F_MISSING | \\
   bcftools view -i '{params.maf}F_MISSING<{params.geno}' -Oz --threads 2 -o {output}
 '''
 
+
 rule get_sampmiss_vcf:
-    input: rules.filter_vars_vcf.output
+    input: rules.filter_vars_vcf.output 
     output: temp('{outdir}/prep/{cohort}_chr{chrom,[0-9XY]+|M}_sampmiss.smiss')
     params:
         out = '{outdir}/prep/{cohort}_chr{chrom,[0-9XY]+|M}_sampmiss'
@@ -244,7 +245,9 @@ plink2 --vcf {input} --missing sample-only --out {params.out}
 '''
 
 rule proc_sampmiss_vcf:
-    input: expand('{{outdir}}/prep/{{cohort}}_chr{chrom}_sampmiss.smiss', chrom = CHROM)
+    input:
+        expand('{{outdir}}/prep/{{cohort}}_chr{chrom}_sampmiss.smiss',
+               chrom = [x for x in CHROM if x.isnumeric()])
     output:
         smiss = '{outdir}/prep/{cohort}_allchr_sampmiss.smiss',
         ikeep = '{outdir}/prep/{cohort}_sampmiss.ikeep'
@@ -269,7 +272,7 @@ rule apply_sampmiss_vcf:
     conda: '../envs/bcftools.yaml'    
     shell:
         '''
-bcftools view --samples-file {input.ikeep} -Oz --threads 2 -o {output}
+bcftools view --samples-file {input.ikeep} -Oz --threads 2 -o {output} {input.vcf}
 '''
 
 if do_hwe:

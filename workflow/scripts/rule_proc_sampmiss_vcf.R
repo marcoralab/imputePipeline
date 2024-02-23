@@ -38,4 +38,4 @@ smiss_tot <- smiss |>
 smiss_tot |>
   filter(F_MISS < as.double(snakemake@params[['mind']])) |>
   pull(ID) |>
-  write_tsv(snakemake@output[['ikeep']])
+  write_lines(snakemake@output[['ikeep']])

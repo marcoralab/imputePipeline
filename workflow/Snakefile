@@ -391,6 +391,7 @@ module postImpute:
 
 use rule * from postImpute as postImpute_*
 
+
 plink_cohort_fams = [f"{x['fstem']}.fam" for x in infiles.values() if x['type'] == 'plink']
 if 'fix_fam' in config and re.match(r'.+\.fam$', config['fix_fam']):
     plink_cohort_fams.insert(0, config['fix_fam'])
@@ -419,11 +420,25 @@ NF != 6 {{
 rule fix_fam:
     input:
         oldfam = rules.cat_fams.output,
-        newfam = '{outdir}/imputed_processed/data/{cohorts_all}_chrall_filtered.fam'
-    output: '{outdir}/imputed_processed/data/{cohorts_all}_chrall_filtered_fixed.fam'
+        newfam = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.fam'
+    output: '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.fam'
     threads: 1
     resources:
         mem_mb = 1024,
         time_min = 180
-    conda: "envs/R.yaml"
+    conda: "envs/r.yaml"
     script: 'fix_fam.R'
+
+rule link_fix_bedbim:
+    input:
+        bed = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.bed',
+        bim = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.bim'
+    output:
+        bed = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.bed',
+        bim = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.bim'
+    localrule: True
+    shell: '''
+ln -rs {input.bed} {output.bed}
+ln -rs {input.bim} {output.bim}
+'''
+

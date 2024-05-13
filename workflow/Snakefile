@@ -396,6 +396,7 @@ plink_cohort_fams = [f"{x['fstem']}.fam" for x in infiles.values() if x['type'] 
 if 'fix_fam' in config and re.match(r'.+\.fam$', config['fix_fam']):
     plink_cohort_fams.insert(0, config['fix_fam'])
 
+
 rule cat_fams:
     input: plink_cohort_fams
     output: '{outdir}/prep/all.fam'
@@ -419,7 +420,7 @@ NF != 6 {{
 
 rule fix_fam:
     input:
-        oldfam = rules.cat_fams.output,
+        oldfam = 'intermediate/all_preimpute.fam', #rules.cat_fams.output,
         newfam = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.fam'
     output: '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.fam'
     threads: 1
@@ -427,7 +428,7 @@ rule fix_fam:
         mem_mb = 1024,
         time_min = 180
     conda: "envs/r.yaml"
-    script: 'fix_fam.R'
+    script: 'scripts/fix_fam.R'
 
 rule link_fix_bedbim:
     input:

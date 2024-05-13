@@ -102,7 +102,7 @@ flippyr -o {params.out} --outputSuffix {params.suff} --plink \
 
 # Split, sort and compress
 
-rule rename_chrom:
+checkpoint rename_chrom:
     input:
         fasta = config['ref'],
     output:

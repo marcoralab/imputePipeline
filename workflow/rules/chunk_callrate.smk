@@ -46,15 +46,32 @@ checkpoint make_chunk_yaml:
     conda: '../envs/chunking.yaml'
     script: '../scripts/fullchunker.py'
 
+def check_chunk_callrate_set_ranges(wc):
+    fname = checkpoints.rename_chrom.get(cohort=wc.cohort, outdir=wc.outdir).output.json
+    with open(fname, "r") as f:
+        build = json.load(f)['build']
+    if build == 37:
+        return f"--chr {wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+    elif build == 38:
+        return f"--chr chr{wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+    else:
+        raise ValueError(f"Invalid build {build}")
+
+
+def check_chunk_callrate_buildfile(wc):
+    fname = checkpoints.rename_chrom.get(cohort=wc.cohort, outdir=wc.outdir)
+    return str(fname.output[0])
+
 rule check_chunk_callrate:
     input:
         vcf = rules.sort_vcf_precallrate.output.vcf,
-        tbi = rules.sort_vcf_precallrate.output.tbi
+        tbi = rules.sort_vcf_precallrate.output.tbi,
+        json = check_chunk_callrate_buildfile
     output:
         '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
         out = '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness',
-        ranges = '--chr {chrom} --from-bp {range_from} --to-bp {range_through}'
+        ranges = check_chunk_callrate_set_ranges
     threads: 1
     resources:
         mem_mb = 5200,

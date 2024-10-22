@@ -25,6 +25,10 @@ def parse_chrom(chrs):
         parsed += chrs
     return parsed
 
+def val_if_config(key, default=None):
+    if key in config:
+        return config[key]
+    return default
 
 if 'chr' in config:
     raise ValueError(
@@ -34,39 +38,152 @@ elif 'chroms' not in config:
 else:
     CHROM = parse_chrom(config['chroms'])
 
+build = val_if_config('build', 'b37')
+
 # --- Process input files from config ---
 
 INPATH = os.path.normpath(config['directory'])
 
 if 'COHORT' in config and config['COHORT']:
-    COHORT = config["COHORT"]
+    SAMPLES = config["COHORT"]
 elif 'SAMPLES' in config and config['SAMPLES']:
-    COHORT = config["SAMPLES"]
+    SAMPLES = config["SAMPLES"]
 else:
     # Get list of all .bed files
     # Sample is every base name for the .bed files in the INPATH directory
-    expression = re.compile(r"(^.*\/)(.*)(?=\.bed)")
-    COHORT = [expression.search(x)[2] for x in glob.iglob(INPATH + "/*.bed")]
+    expression_plink = re.compile(r"(^(.+\/)+)(.*)(?=\.bed)")
+    expression_vcf = re.compile(r"(^(.+\/)+)(.*)(\.[bv]cf$|\.vcf\.gz$)")
+    expression_vcfchr = re.compile(r"(^(.+\/)+)(.*)\.chr[0-9XYM]{1,2}(\.[bv]cf$|\.vcf\.gz$)")
+
+    SAMPLES = {}
+    SAMPLES_plink = [expression_plink.search(x)
+                     for x in glob.iglob(INPATH + "/*.bed")] 
+    SAMPLES.update(
+        {x[3]: {'type': 'plink',
+                'fstem': os.path.join(x[1], x[3])}
+        for x in SAMPLES_plink})
+    vcfs = glob.glob(INPATH + "/*.vcf.gz") + glob.glob(INPATH + "/*.vcf") + glob.glob(INPATH + "/*.bcf")
+    SAMPLES_vcfs_all = [
+      expression_vcf.search(x) for x in vcfs
+      if not re.match(r'.+\.chr[0-9XYM]{1,2}\..+', x)]
+    SAMPLES_vcfs_chr = {expression_vcfchr.search(x) for x in vcf
+                if re.match(r'.+\.chr[0-9XYM]{1,2}\..+', x)}
+    SAMPLES.update(
+        {x[3]: {'type': 'vcf',
+                'file': os.path.normpath(x[0])}
+        for x in SAMPLES_vcfs_all})
+    SAMPLES.update(
+        {x[3]: {'type': 'vcf_chr',
+                'file': os.path.join(x[1], f'{x[3]}.chr{{chrom}}.{x[4]}')}
+        for x in SAMPLES_vcfs_chr})
+
+def first_match(pattern, strings):
+    pat = re.compile(pattern)
+    for string in strings:
+        match = pat.match(string)
+        if match:
+            return match
 
 # --- Process keep and remove ---
-
-
-def sampfilt(config):
-    def filtstr(x):
-        if not (x in config and config[x] and config[x] is not None):
-            return None
-        elif os.path.isfile(config[x]):
-            paramstr = 'keep' if x == 'include_samp' else 'remove'
-            return '--{} {}'.format(paramstr, os.path.normpath(config[x]))
+if type(SAMPLES) is dict:
+    infiles = SAMPLES
+    COHORT = list(infiles.keys())
+else:
+    COHORT = SAMPLES
+    files = (glob.glob(INPATH + "/*.bcf")
+             + glob.glob(INPATH + "/*.vcf.gz")
+             + glob.glob(INPATH + "/*.vcf") 
+             + glob.glob(INPATH + "/*.bed"))
+    
+    infiles = {}
+    for sample in SAMPLES:
+        m = first_match(
+            f'({INPATH}/{sample})\\.(bcf$|vcf\\.gz$|vcf|bed)',
+            files)
+        if not m:
+            if 'classic' in config and config['classic']:
+                infiles[sample] = {
+                    'type': 'plink',
+                    'fstem': os.path.normpath(f'{INPATH}/{sample}')
+                }
+                continue
+            # Split chrom files not supported for SAMPLE list
+            raise Exception(f'Input file not found for {sample}')
+        if m[2] == 'bed':
+            infiles[sample] = {
+                'type': 'plink',
+                'fstem': m[1]
+            }
         else:
-            filt = 'inclusion' if x == 'include_samp' else 'exclusion'
-            raise Exception("Invalid {} list: {}.".format(filt, config[x]))
-    x = [filtstr(x) for x in ['include_samp', 'exclude_samp']]
-    x = [i for i in x if i is not None]
-    return ' '.join(x) if x else ''
+            infiles[sample] = {
+                'type': 'vcf',
+                'file': os.path.normpath(m[0])
+            }
 
+intypes_vcf = all(x['type'] in ['vcf', 'vcf_chr'] for x in infiles.values())
+intypes_plink = all(x['type'] == 'plink' for x in infiles.values())
 
-keep_remove_command = sampfilt(config)
+if intypes_plink:
+    def build_sampfilt(config):
+        def filtstr(x):
+            if not (x in config and config[x] and config[x] is not None):
+                return None
+            elif os.path.isfile(config[x]):
+                paramstr = 'keep' if x == 'include_samp' else 'remove'
+                return '--{} {}'.format(paramstr, os.path.normpath(config[x]))
+            else:
+                filt = 'inclusion' if x == 'include_samp' else 'exclusion'
+                raise Exception("Invalid {} list: {}.".format(filt, config[x]))
+        x = [filtstr(x) for x in ['include_samp', 'exclude_samp']]
+        x = [i for i in x if i is not None]
+        return ' '.join(x) if x else ''
+
+    def select_sampfilt_files(config):
+        include_samp = val_if_config('include_samp', '')
+        exclude_samp = val_if_config('exclude_samp', '')
+        if not include_samp and not exclude_samp:
+            return []
+        elif include_samp and exclude_samp:
+            return [os.path.normpath(x) for x in [include_samp, exclude_samp]]
+        elif include_samp:
+            return os.path.normpath(include_samp)
+        else:
+            return os.path.normpath(exclude_samp)
+    
+    sampfilt = build_sampfilt(config)
+
+elif intypes_vcf:
+    def build_sampfilt(config):
+        include_samp = val_if_config('include_samp', '')
+        exclude_samp = val_if_config('exclude_samp', '')
+        if not include_samp and not exclude_samp:
+            return ''
+        elif include_samp and exclude_samp:
+            raise Exception('Cannot have both sample removal and exclusion.')
+        elif include_samp:
+            paramstr = os.path.normpath(include_samp)
+        else:
+            paramstr = '^' + os.path.normpath(exclude_samp)
+        return f' --samples-file {paramstr} --force-samples'
+    
+    def select_sampfilt_files(config):
+        include_samp = val_if_config('include_samp', '')
+        exclude_samp = val_if_config('exclude_samp', '')
+        if not include_samp and not exclude_samp:
+            return []
+        elif include_samp and exclude_samp:
+            raise Exception('Cannot have both sample removal and exclusion.')
+        elif include_samp:
+            return os.path.normpath(include_samp)
+        else:
+            return os.path.normpath(exclude_samp)
+
+    sampfilt = build_sampfilt(config)
+
+else:
+    sampfilt = False
+    if val_if_config('include_samp') or val_if_config('exclude_samp'):
+        raise Exception("No filtering in mixed VCF/PLINK input")
 
 # --- Process imputation settings ---
 
@@ -136,8 +253,8 @@ imputed_outs = dict(
     vcf_merged="/data/all_chrall_filtered.vcf.gz",
     bgen_bycohort="/data/{cohort}_chrall_filtered.bgen",
     bgen_merged="/data/merged/merged_chrall_filtered.bgen",
-    plink_bycohort="/data/{cohort}_chrall_filtered.{ext}",
-    plink_merged="/data/all_chrall_filtered.{ext}")
+    plink_bycohort="/data/{cohort}_chrall_filtered_fixed.{ext}",
+    plink_merged="/data/all_chrall_filtered_fixed.{ext}")
 
 def expand_outs(out):
     return expand(imputed_stem + out,
@@ -163,19 +280,19 @@ if config['chr_callrate']:
 elif config['chunk_callrate']:
     include: 'rules/chunk_callrate.smk'
 else:
-    rule compress_vcf_nocallrate:
-        input: rules.split_to_vcf.output
-        output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
-        threads: 4
-        resources:
-            mem_mb = 8192,
-            time_min = 30
-        conda: 'envs/bcftools.yaml'
+    rule copy_vcf_nocallrate:
+        input: 
+            tbi = rules.sort_vcf_precallrate.output.tbi,
+            vcf = rules.sort_vcf_precallrate.output.vcf
+        output:
+            tbi = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz.tbi',
+            vcf = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
+        localrule: True
         shell:
             '''
-    bcftools sort --threads {threads} -Oz -o {output} {input}
-    bcftools index -t {output}
-    '''
+cp {input.vcf} {output.vcf}
+cp {input.tbi} {output.tbi}
+'''
 
 rule apply_irem:
     input:
@@ -273,3 +390,56 @@ module postImpute:
     config: postImpute_config
 
 use rule * from postImpute as postImpute_*
+
+
+plink_cohort_fams = [f"{x['fstem']}.fam" for x in infiles.values() if x['type'] == 'plink']
+if 'fix_fam' in config and re.match(r'.+\.fam$', config['fix_fam']):
+    plink_cohort_fams.insert(0, config['fix_fam'])
+
+
+rule cat_fams:
+    input: plink_cohort_fams
+    output: '{outdir}/prep/all.fam'
+    threads: 1
+    resources:
+        mem_mb = 1024,
+        time_min = 180
+    shell: r'''
+awk 'BEGIN {{
+    OFS = "\t"
+}}
+NF != 6 {{
+    print "Error: Number of fields on line " FNR " of " FILENAME " is not 6"
+    exit 1
+}}
+1 {{
+    $1 = $1
+    print
+}}' {input} > {output}
+'''
+
+rule fix_fam:
+    input:
+        oldfam = 'intermediate/all_preimpute.fam', #rules.cat_fams.output,
+        newfam = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.fam'
+    output: '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.fam'
+    threads: 1
+    resources:
+        mem_mb = 1024,
+        time_min = 180
+    conda: "envs/r.yaml"
+    script: 'scripts/fix_fam.R'
+
+rule link_fix_bedbim:
+    input:
+        bed = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.bed',
+        bim = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.bim'
+    output:
+        bed = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.bed',
+        bim = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.bim'
+    localrule: True
+    shell: '''
+ln -rs {input.bed} {output.bed}
+ln -rs {input.bim} {output.bim}
+'''
+

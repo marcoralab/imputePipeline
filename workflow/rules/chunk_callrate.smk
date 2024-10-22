@@ -4,7 +4,8 @@ def chunkfiles(wc):
         cohort=wc.cohort, outdir=wc.outdir).output[0]
     with fname.open() as chunkfile:
         chunks = json.load(chunkfile)
-    chunks_proc = zip(chunks['chrom'], chunks['from'], chunks['through'])
+    chunks_proc = zip([re.sub("chr", "", x) for x in chunks['chrom']],
+                      chunks['from'], chunks['through'])
     ranges = [f'chr{ch}_from{fr}_through{to}'
               for ch, fr, to in chunks_proc if ch in chrom]
     files = [
@@ -12,47 +13,31 @@ def chunkfiles(wc):
         for range in ranges]
     return files
 
-rule all_to_vcf:
-    input: rules.flippyr.output.plink
-    params:
-        ins = '{outdir}/plink/{cohort}_refmatched',
-        out = '{outdir}/{cohort}_chrall_unsorted',
-    output: temp('{outdir}/{cohort}_chrall_unsorted.vcf.gz')
-    threads: 4
+### This is slow and inefficient. Better to make chunks per chromosome then merge the json files
+
+rule cat_chroms:
+    input:
+        vcf = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz', chrom=CHROM),
+        tbi = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz.tbi', chrom=CHROM)
+    output:
+        vcf = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz',
+        tbi = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz.tbi'
+    threads: 1
     resources:
-        mem_mb = 8192,
-        time_min = 120
-    conda: '../envs/plink.yaml'
-    shell:
-        '''
-plink --bfile {params.ins} --memory 4096 --real-ref-alleles \
-  --recode vcf bgz --out {params.out}
+        mem_mb = 5200,
+        time_min = 600
+    conda: '../envs/bcftools.yaml'
+    shell: '''
+bcftools concat {input.vcf} -Oz -o {output.vcf}
+bcftools index -tf {output.vcf}
 '''
 
-rule sort_vcf_allchr:
-    input: rules.all_to_vcf.output
-    output:
-        vcf = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz'),
-        tbi = temp('{outdir}/{cohort}_chrall_preCallcheck.vcf.gz.tbi')
-    params:
-        tempdir = "{outdir}/temp/{cohort}"
-    threads: 4
-    resources:
-        mem_mb = 16384,
-        time_min = 480
-    conda: '../envs/bcftools.yaml'
-    shell:
-        '''
-mkdir -p {params.tempdir}
-bcftools sort -Oz -o {output.vcf} \
-  --max-mem 64000M -T {params.tempdir} {input}
-bcftools index -t {output.vcf}
-'''
+#TODO rewrite to do per chromosome 
 
 checkpoint make_chunk_yaml:
     input:
-        vcf = rules.sort_vcf_allchr.output.vcf,
-        tbi = rules.sort_vcf_allchr.output.tbi
+        vcf = rules.cat_chroms.output.vcf,
+        tbi = rules.cat_chroms.output.tbi
     output: '{outdir}/callrate/{cohort}.chunks.json'
     threads: 4
     resources:
@@ -61,15 +46,32 @@ checkpoint make_chunk_yaml:
     conda: '../envs/chunking.yaml'
     script: '../scripts/fullchunker.py'
 
+def check_chunk_callrate_set_ranges(wc):
+    fname = checkpoints.rename_chrom.get(cohort=wc.cohort, outdir=wc.outdir).output.json
+    with open(fname, "r") as f:
+        build = json.load(f)['build']
+    if build == 37:
+        return f"--chr {wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+    elif build == 38:
+        return f"--chr chr{wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+    else:
+        raise ValueError(f"Invalid build {build}")
+
+
+def check_chunk_callrate_buildfile(wc):
+    fname = checkpoints.rename_chrom.get(cohort=wc.cohort, outdir=wc.outdir)
+    return str(fname.output[0])
+
 rule check_chunk_callrate:
     input:
-        vcf = rules.sort_vcf_allchr.output.vcf,
-        tbi = rules.sort_vcf_allchr.output.tbi
+        vcf = rules.sort_vcf_precallrate.output.vcf,
+        tbi = rules.sort_vcf_precallrate.output.tbi,
+        json = check_chunk_callrate_buildfile
     output:
         '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
         out = '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness',
-        ranges = '--chr {chrom} --from-bp {range_from} --to-bp {range_through}'
+        ranges = check_chunk_callrate_set_ranges
     threads: 1
     resources:
         mem_mb = 5200,
@@ -79,7 +81,7 @@ rule check_chunk_callrate:
         '''
 vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
 '''
-# import ipdb; ipdb.set_trace()
+
 rule process_chunk_callrate:
     input: chunkfiles
     output: '{outdir}/callrate/{cohort}/chrall.irem'

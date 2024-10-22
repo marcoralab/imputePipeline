@@ -1,15 +1,20 @@
-from chunks import chunker
-import cyvcf2
-import sys
 import json
+import sys
+import re
+import cyvcf2
+from chunks import chunker
 
 def contig_bounds(vcf):
     def getbounds(vcf, cname):
-       contig = list(vcf(cname))
+       contig = [x for x in vcf(cname)]
+       if not contig:
+           return None
        bounds = [contig[x].POS for x in [0, -1]]
        return bounds
-    cnames = vcf.seqnames
-    return {x: getbounds(vcf, x) for x in cnames}
+    cnames = [x for x in vcf.seqnames
+              if re.match(r'^(chr){0,1}([12]{0,1}\d|X|Y|M|MT)$', x)]
+    allbounds = {x: getbounds(vcf, x) for x in cnames}
+    return {k: v for k, v in allbounds.items() if v}
 
 def chunk_contigs(bounds):
     chunks = []

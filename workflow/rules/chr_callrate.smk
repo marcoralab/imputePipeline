@@ -10,7 +10,14 @@ rule check_chr_callrate:
         mem_mb = 8192,
         time_min = 30
     conda: '../envs/bcftools.yaml'
-    shell: 'vcftools --missing-indv --gzvcf {input.vcf} --out {params.out}'
+    shell: '''
+#vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
+vcf={input.vcf}
+bcftools stats -S <(bcftools query -l $vcf) $vcf | \
+  awk 'BEGIN {{FS=OFS="\t"; print "INDV\tN_DATA\tN_GENOTYPES_FILTERED\tN_MISS\tF_MISS"}} \
+       $1 == "SN" && $3 == "number of records:" {{n=$4}} \
+       $1 == "PSC" {{print $3,n,0,$14,$14/n}}' > {output}
+'''
 
 rule process_chr_callrate:
     input:

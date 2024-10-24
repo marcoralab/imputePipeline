@@ -51,9 +51,9 @@ def check_chunk_callrate_set_ranges(wc):
     with open(fname, "r") as f:
         build = json.load(f)['build']
     if build == 37:
-        return f"--chr {wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+        return f"{wc.chrom}:{wc.range_from}-{wc.range_through}"
     elif build == 38:
-        return f"--chr chr{wc.chrom} --from-bp {wc.range_from} --to-bp {wc.range_through}"
+        return f"chr{wc.chrom}:{wc.range_from}-{wc.range_through}"
     else:
         raise ValueError(f"Invalid build {build}")
 
@@ -70,8 +70,7 @@ rule check_chunk_callrate:
     output:
         '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
-        out = '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness',
-        ranges = check_chunk_callrate_set_ranges
+        ranges = check_chunk_callrate_set_rangesKK
     threads: 1
     resources:
         mem_mb = 5200,
@@ -79,7 +78,12 @@ rule check_chunk_callrate:
     conda: '../envs/bcftools.yaml'
     shell:
         '''
-vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
+#vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
+vcf={input.vcf} 
+bcftools stats -S <(bcftools query -l $vcf) -r {params.ranges} $vcf | \
+  awk 'BEGIN {{FS=OFS="\t"; print "INDV\tN_DATA\tN_GENOTYPES_FILTERED\tN_MISS\tF_MISS"}} \
+       $1 == "SN" && $3 == "number of records:" {{n=$4}} \
+       $1 == "PSC" {{print $3,n,0,$14,$14/n}}' > {output}
 '''
 
 rule process_chunk_callrate:

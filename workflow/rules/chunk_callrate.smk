@@ -70,7 +70,7 @@ rule check_chunk_callrate:
     output:
         '{outdir}/callrate/{cohort}/chr{chrom}_from{range_from}_through{range_through}.sample_missingness.imiss'
     params:
-        ranges = check_chunk_callrate_set_rangesKK
+        ranges = check_chunk_callrate_set_ranges
     threads: 1
     resources:
         mem_mb = 5200,

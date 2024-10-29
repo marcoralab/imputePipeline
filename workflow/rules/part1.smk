@@ -94,7 +94,7 @@ rule flippyr:
     resources:
         mem_mb = 8192,
         walltime = '48:00'
-    container: 'docker://befh/flippyr:0.6.0'
+    container: 'docker://befh/flippyr:0.6.1'
     shell: '''
 flippyr -o {params.out} --outputSuffix {params.suff} --plink \
   {input.fasta} {params.bim}
@@ -112,7 +112,7 @@ checkpoint rename_chrom:
     resources:
         mem_mb = 256,
         time_min = 10
-    container: 'docker://befh/flippyr:0.6.0'
+    container: 'docker://befh/flippyr:0.6.1'
     script: '../scripts/rename_chrom.py'
 
 def get_chrname(wc):

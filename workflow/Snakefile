@@ -66,7 +66,7 @@ else:
     SAMPLES_vcfs_all = [
       expression_vcf.search(x) for x in vcfs
       if not re.match(r'.+\.chr[0-9XYM]{1,2}\..+', x)]
-    SAMPLES_vcfs_chr = {expression_vcfchr.search(x) for x in vcf
+    SAMPLES_vcfs_chr = {expression_vcfchr.search(x) for x in vcfs
                 if re.match(r'.+\.chr[0-9XYM]{1,2}\..+', x)}
     SAMPLES.update(
         {x[3]: {'type': 'vcf',

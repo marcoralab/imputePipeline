@@ -78,7 +78,6 @@ rule check_chunk_callrate:
     conda: '../envs/bcftools.yaml'
     shell:
         '''
-#vcftools --missing-indv --gzvcf {input.vcf} {params.ranges} --out {params.out}
 vcf={input.vcf} 
 bcftools stats -S <(bcftools query -l $vcf) -r {params.ranges} $vcf | \
   awk 'BEGIN {{FS=OFS="\t"; print "INDV\tN_DATA\tN_GENOTYPES_FILTERED\tN_MISS\tF_MISS"}} \

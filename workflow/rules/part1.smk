@@ -156,7 +156,7 @@ rule rename_vcf_fromplink:
     conda: '../envs/bcftools.yaml'
     shell:
         '''
-bcftools annotate --rename-chrs -Oz -o {output} {input.rename} 
+bcftools annotate --rename-chrs {input.rename} -Oz -o {output} {input.vcf}
 '''
 
 def get_chrom(wc):

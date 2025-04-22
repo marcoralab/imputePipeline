@@ -246,7 +246,7 @@ def flatten(nested):
     return flat
 
 
-imputed_stem = "{outdir}/imputed_processed"
+imputed_stem = "{outdir}/imputed/processed"
 imputed_outs = dict(
     stat_report="/stats/{cohort}_impStats.html",
     vcf_bycohort="/data/{cohort}_chrall_filtered.vcf.gz",
@@ -259,6 +259,7 @@ imputed_outs = dict(
 def expand_outs(out):
     return expand(imputed_stem + out,
                   cohort=COHORT, ext=BPLINK, outdir=OUTPATH)
+
 
 imputed = flatten([expand_outs(imputed_outs[x]) for x in config["outputs"]])
 
@@ -420,7 +421,7 @@ NF != 6 {{
 
 rule fix_fam:
     input:
-        oldfam = 'intermediate/all_preimpute.fam', #rules.cat_fams.output,
+        oldfam = rules.cat_fams.output,
         newfam = '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered.fam'
     output: '{outdir}/imputed/processed/data/{cohorts_all}_chrall_filtered_fixed.fam'
     threads: 1

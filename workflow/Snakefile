@@ -303,7 +303,8 @@ rule apply_irem:
     output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
     threads: 4
     resources:
-        mem_mb = 8192,
+        #mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 30
     conda: 'envs/bcftools.yaml'
     shell:

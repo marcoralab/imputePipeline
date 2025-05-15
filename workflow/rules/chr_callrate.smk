@@ -7,7 +7,7 @@ rule check_chr_callrate:
         out = '{outdir}/callrate/{cohort}/chr{chrom}.sample_missingness'
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 30
     conda: '../envs/bcftools.yaml'
     shell: '''
@@ -28,7 +28,7 @@ rule process_chr_callrate:
         threshold = 0.2
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 30
     conda: '../envs/r.yaml'
     script: '../scripts/process_imiss.R {params.dir}'

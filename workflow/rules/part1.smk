@@ -22,7 +22,7 @@ rule var_qc:
         maf = maf_cmd
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/plink.yaml'
     shell:
@@ -43,7 +43,7 @@ rule subj_qc:
     output: temp(expand('{{outdir}}/plink/{{cohort}}_indivqc.{ext}', ext=BPLINK))
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/plink.yaml'
     shell:
@@ -66,7 +66,7 @@ if 'hwe' in config['preqc'] and config['preqc']['hwe']:
             hwe = config['preqc']['hwe'],
         threads: 2
         resources:
-            mem_mb = 8192,
+            mem_mb = 16384,
             time_min = 30
         conda: '../envs/plink.yaml'
         shell:
@@ -93,7 +93,7 @@ rule flippyr:
     threads: 1
     resources:
         mem_mb = 8192,
-        walltime = '48:00'
+        runtime: "48h"
     container: 'docker://befh/flippyr:0.6.1'
     shell: '''
 flippyr -o {params.out} --outputSuffix {params.suff} --plink \
@@ -135,7 +135,7 @@ rule split_to_vcf:  # Split plink files into chromosomes.
     output: temp('{outdir}/{cohort}.chr{chrom}_unsorted.vcf.gz')
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/plink.yaml'
     shell: '''
@@ -151,7 +151,7 @@ rule rename_vcf_fromplink:
     output: temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_unsorted_renamed.vcf.gz')
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/bcftools.yaml'
     shell:
@@ -176,7 +176,7 @@ rule invcf_split:
         sf = sampfilt
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/bcftools.yaml'    
     shell:
@@ -193,7 +193,7 @@ rule invcf_sampfilt:
         sf = sampfilt
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/bcftools.yaml'    
     shell:
@@ -219,7 +219,7 @@ rule filter_vars_vcf:
         maf = f"MAF[0]>={config['preqc']['maf']} && " if 'maf' in config['preqc'] and config['preqc']['maf'] else ""
     threads: 3
     resources:
-        mem_mb = 8192,
+        mem_mb = 24576,
         time_min = 30
     conda: '../envs/bcftools.yaml'
     shell:
@@ -236,7 +236,7 @@ rule get_sampmiss_vcf:
         out = '{outdir}/prep/{cohort}_chr{chrom,[0-9XY]+|M}_sampmiss'
     threads: 3
     resources:
-        mem_mb = 8192,
+        mem_mb = 24576,
         time_min = 30
     conda: '../envs/plink.yaml'
     shell:
@@ -267,7 +267,7 @@ rule apply_sampmiss_vcf:
     output: temp('{outdir}/prep/{cohort}_split_chr{chrom,[0-9XY]+|M}_sampmiss.vcf.gz')
     threads: 2
     resources:
-        mem_mb = 8192,
+        mem_mb = 16384,
         time_min = 30
     conda: '../envs/bcftools.yaml'    
     shell:
@@ -283,7 +283,7 @@ if do_hwe:
             hwe = config['preqc']['hwe']
         threads: 3
         resources:
-            mem_mb = 8192,
+            mem_mb = 24576,
             time_min = 30
         conda: '../envs/bcftools.yaml'
         shell:
@@ -306,7 +306,7 @@ rule sort_vcf_precallrate:
         tbi = temp('{outdir}/{cohort}_chr{chrom,[0-9XY]+|M}_preCallcheck.vcf.gz.tbi')
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 30
     conda: '../envs/bcftools.yaml'
     shell:

@@ -1,7 +1,7 @@
 '''Snakefile for MIS preparation'''
 
 from snakemake.utils import min_version
-min_version("7.25.0")
+min_version("8.0")
 
 import re
 import glob

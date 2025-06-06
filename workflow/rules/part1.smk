@@ -93,7 +93,7 @@ rule flippyr:
     threads: 1
     resources:
         mem_mb = 8192,
-        runtime: "48h"
+        runtime = "48h"
     container: 'docker://befh/flippyr:0.6.1'
     shell: '''
 flippyr -o {params.out} --outputSuffix {params.suff} --plink \
@@ -314,3 +314,5 @@ rule sort_vcf_precallrate:
 bcftools sort {input} -Oz -o {output.vcf}
 bcftools index -t {output.vcf}
 '''
+
+### Processed by update_sm8plus.py for Snakemake 8+ ###

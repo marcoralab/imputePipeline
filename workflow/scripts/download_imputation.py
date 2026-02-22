@@ -4,6 +4,7 @@ import datetime
 import time
 import logging
 from urllib.parse import urlparse
+from pathlib import Path
 import urllib
 import sys
 import os
@@ -154,16 +155,38 @@ outputs = [{**x, 'download': [{'url_dl': url_dl.format(**y),
 outputs_dict = {x['description']: x['download']
                 for x in outputs if x['download']}
 
+# new version of API has subdirectories, so we need to create them before downloading
+subdirs = {Path(d['filename']).parent
+           for lst in outputs_dict.values()
+           for d in lst if 'filename' in d}
+
+for p in subdirs - {Path('.')}:
+    pp = Path(snakemake.params['outpath']) / p # I hate this operator for joining paths :(
+    pp.mkdir(parents=True, exist_ok=True)
+
+def retrieve_file(file, destfile, retry):
+    try:
+        urllib.request.urlretrieve(
+            file['url_dl'], filename=destfile,
+            reporthook=lambda c, bs, ts: progress(f"{friendly_jobname} {file['filename']}", c, bs, ts))
+    except urllib.error.HTTPError as e:
+        if retry is None or e.code != 404 or retry >= 5:
+            raise e
+        logging.warning(f"File not yet available for {file['filename']}. Retrying in 10 seconds.")
+        time.sleep(10)
+        retrieve_file(file, destfile, retry=retry + 1)
+
+
 # download files
+dl_retry = 0 # for first file only, try up to 6 times. Set to None after first file.
 if jinfo['state'] not in [7, 10]:
     for desc, dl in outputs_dict.items():
         logging.info(f"Downloading {desc} for {friendly_jobname}")
         for file in dl:
             destfile = os.path.join(snakemake.params['outpath'], file['filename'])
             logging.info(f"Starting download: {file['filename']} for {friendly_jobname}")
-            urllib.request.urlretrieve(
-                file['url_dl'], filename=destfile,
-                reporthook=lambda c, bs, ts: progress(f"{friendly_jobname} {file['filename']}", c, bs, ts))
+            retrieve_file(file, destfile, dl_retry)
+            dl_retry = None
         logging.info(f"Finished downloading {desc} for {friendly_jobname}")
 
 # Save job info

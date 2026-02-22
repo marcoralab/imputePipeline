@@ -11,16 +11,24 @@ import re
 
 if 'snakemake' not in globals():
     import yaml
+    cohort = "colombian-psen1-e280a-mega_AMR"
     with open("config/config.yaml", 'r') as ymlfile:
-        cfg = yaml.safe_load(ymlfile)
+        cfg = yaml.safe_load(ymlfile)["impute"]
+    imp_settings = cfg['imputation']['default'].copy()
+    if 'imputation' in cfg and cohort in cfg['imputation']:
+        imp_settings.update(cfg['imputation'][cohort])
+    if 'token' in imp_settings:
+        token = imp_settings.pop('token')
+    else:
+        raise ValueError("Must provide either cohort or default API token.")
     class snakemake_class_testing:
         input = []
         params = {}
     snakemake = snakemake_class_testing()
-    snakemake.params['token'] = cfg["impute"]["imputation"]["default"]["token"]
-    snakemake.params['outpath'] = "temp/sandbox"
+    snakemake.params['token'] = token
+    snakemake.params['outpath'] = f"intermediate/imputation/imputed/new/{cohort}"
     os.makedirs(snakemake.params['outpath'], exist_ok=True)
-    snakemake.input = ["intermediate/imputation/imputation/nacc-gsa_EAS_imputation.json"]
+    snakemake.input = [f"intermediate/imputation/{cohort}_imputation_new.json"]
 
 
 # Configure logging
@@ -41,7 +49,7 @@ def format_speed(speed):
         units.pop(0)
         precision += 1
     return f"{speed:.{min(precision, 3)}f} {units[0]}"
-    
+
 
 def progress(file_name, count, block_size, total_size):
     """Prints download progress every 15 seconds with file name."""
@@ -56,6 +64,7 @@ def progress(file_name, count, block_size, total_size):
         start_time = now
         reported = False
         return
+
     size = int(count * block_size)
     progress_size = f"{size // (1024 * 1024)} MB"
     percent = min(int(count * block_size * 100 / total_size), 100)
@@ -69,6 +78,7 @@ def progress(file_name, count, block_size, total_size):
     if now - last_progress_time >= 15 or initial_report:  # Update every 15 seconds
         last_progress_time = now
         logging.info(f"Downloading {file_name}: {percent}% | {progress_size} | {speed}")
+
 
 def jobinfo(settings, token=None):
     """Fetch job information from the API."""
@@ -89,6 +99,7 @@ def jobinfo(settings, token=None):
     jinfo['settings'] = settings
     return jinfo
 
+
 def fmt_delta(start_time):
     """Formats elapsed time as HH:MM:SS."""
     delt = datetime.datetime.now() - start_time
@@ -97,6 +108,7 @@ def fmt_delta(start_time):
     sec = (delt.seconds % 3600) % 60
     ts = f"{hours:02d}:{mins:02d}:{sec:02d}"
     return f"{delt.days} Days {ts}" if delt.days > 0 else ts
+
 
 # Read job details
 jsonfile = snakemake.input[0]

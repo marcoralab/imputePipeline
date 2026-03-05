@@ -91,10 +91,9 @@ else:
 jobs = getjobs(url, token)
 incomplete = list(filter(lambda x: x['state'] < 4, jobs))
 
-if len(incomplete) > 2:
+if len(incomplete) > 5:
     print("Three jobs are already queued or running on the server:\n\n")
-    while len(incomplete) > 2:
-        print("\033[A                                      \033[A") #erase line
+    while len(incomplete) > 5:
         if max([x['state'] for x in incomplete]) == 1: #queued only
             qpos = min([x['positionInQueue'] for x in incomplete])
             print("lowest queue position is {}.".format(qpos))

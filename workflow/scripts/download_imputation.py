@@ -170,10 +170,10 @@ def retrieve_file(file, destfile, retry):
             file['url_dl'], filename=destfile,
             reporthook=lambda c, bs, ts: progress(f"{friendly_jobname} {file['filename']}", c, bs, ts))
     except urllib.error.HTTPError as e:
-        if retry is None or e.code != 404 or retry >= 5:
+        if retry is None or e.code != 404 or retry >= 9:
             raise e
-        logging.warning(f"File not yet available for {file['filename']}. Retrying in 10 seconds.")
-        time.sleep(10)
+        logging.warning(f"File not yet available for {file['filename']}. Retrying in 30 seconds.")
+        time.sleep(30)
         retrieve_file(file, destfile, retry=retry + 1)
 
 

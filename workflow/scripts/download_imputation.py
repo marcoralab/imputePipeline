@@ -129,7 +129,7 @@ friendly_jobname = re.sub(r'_submitted20\d\d-\d\d-\d\d\.\d+$', '', jinfo["name"]
 # Monitor job status
 while jinfo['state'] < 4:
     if jinfo['state'] == 1:
-        print('{} waiting for {}. (Queue position {})'.format(
+        logging.info('{} waiting for {}. (Queue position {})'.format(
             imputation['id'], fmt_delta(submission), jinfo['positionInQueue']))
         time.sleep(60) # wait for 1 minute
     elif jinfo['state'] == 2:

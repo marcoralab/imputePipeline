@@ -4,6 +4,16 @@ import time
 import secrets
 import string
 import datetime
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 if 'snakemake' not in globals():
     import yaml
@@ -58,6 +68,8 @@ if 'snakemake' not in globals():
     snakemake.wildcards['cohort'] = cohort
     snakemake.output.append(f"intermediate/imputation/{cohort}_imputation_new.json")
 
+cohort = snakemake.wildcards['cohort']
+
 def getjobs(url, token):
     r_jobs = requests.get(url + "/jobs", headers={'X-Auth-Token' : token })
     if r_jobs.status_code != 200:
@@ -91,28 +103,28 @@ else:
 jobs = getjobs(url, token)
 incomplete = list(filter(lambda x: x['state'] < 4, jobs))
 
-if len(incomplete) > 5:
-    print("Three jobs are already queued or running on the server:\n\n")
-    while len(incomplete) > 5:
+if len(incomplete) > 2:
+    logging.info(f"{cohort} submission: 3 jobs already queued/running on server.")
+    while len(incomplete) > 2:
         if max([x['state'] for x in incomplete]) == 1: #queued only
             qpos = min([x['positionInQueue'] for x in incomplete])
-            print("lowest queue position is {}.".format(qpos))
+            logging.info(f"{cohort} submission: lowest queue position is {qpos}.")
         else:
             running = len([x for x in incomplete if x['state'] > 1])
-            print('{} jobs running.'.format(running))
+            logging.info(f"{cohort} submission: {running} jobs running.")
         time.sleep(600) # wait for 10 minutes
         jobs = getjobs(url, token)
         incomplete = list(filter(lambda x: x['state'] < 4, jobs))
-    print("Job completed; ready to submit.")
+    logging.info(f"{cohort} submission: Job completed; ready to submit.")
 
 # define password and job name, then remove extranious imputation params
 
-data = snakemake.params['imp_settings']
+data = snakemake.params['imp_settings'].copy()
 data['password'] = ''.join(
     (secrets.choice(string.ascii_letters + string.digits)
      for i in range(48)))
 data['job-name'] = '{}_submitted{}'.format(
-    snakemake.wildcards['cohort'],
+    cohort,
     datetime.datetime.now().strftime("%Y-%m-%d.%H%M"))
 
 if 'token' in data:
@@ -141,15 +153,15 @@ r_submission = requests.post(url + submit,
     files=[('files', open(x, 'rb')) for x in snakemake.input['vcf']],
     data=data,
     headers={'X-Auth-Token': token })
-if r_submission.status_code != 200:
-    print(r.json()['message'])
-    raise Exception('POST {} {}'.format(submit, r_submission.status_code))
 
 json_submission = r_submission.json()
+logging.info(f"{cohort} submission message: {json_submission['message']}")
 
-# print message
-print(json_submission['message'])
-print(json_submission['id'])
+if r_submission.status_code != 200:
+    raise Exception('POST {} {}'.format(submit, r_submission.status_code))
+
+# print id
+logging.info(f"{cohort} submission id: {json_submission['id']}")
 
 json_submission['password'] = data['password']
 json_submission['job-name'] = data['job-name']
@@ -166,11 +178,12 @@ if r_check.status_code != 200:
     raise Exception('GET /jobs/{}/status {}'.format(
         json_submission['id'], r_check.status_code))
 
-print('Queue position : {}'.format(r_check.json()['positionInQueue']))
+logging.info(f"{cohort} queue position: {r_check.json()['positionInQueue']}")
 
 serverstats = requests.get(url + '/server/counters').json()
 
-print('{} jobs currently in queue.'.format(serverstats['queue']['size']))
+logging.info(f"{cohort} queue status: "
+             f"{serverstats['queue']['size']} jobs currently in queue.")
 
 with open(snakemake.output[0], 'w') as jobinfo:
     json.dump(json_submission, jobinfo)

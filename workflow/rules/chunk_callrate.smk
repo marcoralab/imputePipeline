@@ -20,8 +20,8 @@ rule cat_chroms:
         vcf = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz', chrom=CHROM),
         tbi = expand('{{outdir}}/{{cohort}}_chr{chrom}_preCallcheck.vcf.gz.tbi', chrom=CHROM)
     output:
-        vcf = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz',
-        tbi = '{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz.tbi'
+        vcf = temp('{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz'),
+        tbi = temp('{outdir}/{cohort}_allchroms_preCallcheck.vcf.gz.tbi')
     threads: 1
     resources:
         mem_mb = 5200,
@@ -41,7 +41,7 @@ checkpoint make_chunk_yaml:
     output: '{outdir}/callrate/{cohort}.chunks.json'
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 60
     conda: '../envs/chunking.yaml'
     script: '../scripts/fullchunker.py'
@@ -94,7 +94,7 @@ rule process_chunk_callrate:
         chunk_variant_count_min = 50
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 60
     conda: '../envs/r.yaml'
     script: '../scripts/process_chunk_imiss.R'

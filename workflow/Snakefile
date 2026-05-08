@@ -1,7 +1,7 @@
 '''Snakefile for MIS preparation'''
 
 from snakemake.utils import min_version
-min_version("7.25.0")
+min_version("8.0")
 
 import re
 import glob
@@ -287,7 +287,7 @@ else:
             vcf = rules.sort_vcf_precallrate.output.vcf
         output:
             tbi = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz.tbi',
-            vcf = '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
+            vcf = temp('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz')
         localrule: True
         shell:
             '''
@@ -300,10 +300,10 @@ rule apply_irem:
         irem = '{outdir}/callrate/{cohort}/chrall.irem',
         vcf = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz',
         tbi = '{outdir}/{cohort}_chr{chrom}_preCallcheck.vcf.gz.tbi'
-    output: '{outdir}/ready/{cohort}_chr{chrom}.vcf.gz'
+    output: temp('{outdir}/ready/{cohort}_chr{chrom}.vcf.gz')
     threads: 4
     resources:
-        mem_mb = 8192,
+        mem_mb = 32768,
         time_min = 30
     conda: 'envs/bcftools.yaml'
     shell:

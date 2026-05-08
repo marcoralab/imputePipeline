@@ -69,6 +69,8 @@ if 'snakemake' not in globals():
     snakemake.wildcards['cohort'] = cohort
     snakemake.output.append(f"intermediate/imputation/{cohort}_imputation_new.json")
 
+cohort = snakemake.wildcards['cohort']
+
 def getjobs(url, token):
     r_jobs = requests.get(url + "/jobs", headers={'X-Auth-Token' : token })
     if r_jobs.status_code != 200:
@@ -122,7 +124,7 @@ data['password'] = ''.join(
     (secrets.choice(string.ascii_letters + string.digits)
      for i in range(48)))
 data['job-name'] = '{}_submitted{}'.format(
-    snakemake.wildcards['cohort'],
+    cohort,
     datetime.datetime.now().strftime("%Y-%m-%d.%H%M"))
 
 if 'token' in data:
